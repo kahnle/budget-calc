@@ -125,7 +125,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <dt>Chuyến tàu</dt><dd id="sTrip">0</dd>
   <dt>Bậc đá</dt><dd id="sStep">0</dd>
   <dt>Độ cao</dt><dd id="sAlt">1 m</dd>
-  <dt>Chi tiêu</dt><dd id="sSpent">0đ</dd>
+  <dt>Chi tiêu</dt><dd id="sSpent">0 vỏ sò</dd>
   <button id="snd" type="button">Âm thanh: bật</button>
 </dl>
 
@@ -182,7 +182,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <li>Mô tô nước, phao chuối ở Bến Amanoi</li>
       <li>Chụp ảnh lưu vào album</li>
     </ul>
-    <p class="note">Cảnh dựng theo phong cách hóa từ bố cục thật của vịnh (làng chài, cầu tàu, cầu Vĩnh Hy, Resort Vĩnh Hy, nhà bè, mũi núi Amanoi, Hang Yến, Mũi Cá Heo, Hòn Rùa). Tên khách sạn, homestay lấy từ các cơ sở có thật ở Vĩnh Hy nhưng vị trí, hình dáng chỉ phỏng theo, không phải bản sao chính xác. Giá trong game chỉ để minh họa. Máy tính: WASD + kéo chuột. Điện thoại: cần điều khiển bên trái, vuốt để nhìn.</p>
+    <p class="note">Cảnh dựng theo phong cách hóa từ bố cục thật của vịnh (làng chài, cầu tàu, cầu Vĩnh Hy, Resort Vĩnh Hy, nhà bè, mũi núi Amanoi, Hang Yến, Mũi Cá Heo, Hòn Rùa). Tên khách sạn, homestay lấy từ các cơ sở có thật ở Vĩnh Hy nhưng vị trí, hình dáng chỉ phỏng theo, không phải bản sao chính xác. Tiền trong game là vỏ sò (1 vỏ sò tương đương 1.000đ), giá chỉ để minh họa. Máy tính: WASD + kéo chuột. Điện thoại: cần điều khiển bên trái, vuốt để nhìn.</p>
     <button id="start" type="button">Bắt đầu</button><span class="loading" id="loading">Đang dựng cảnh…</span>
   </div>
 </div>
@@ -536,89 +536,283 @@ function mergeColored(parts){
 function coloredMesh(parts, shadow = true){ const m = new THREE.Mesh(mergeColored(parts), vcMat); m.castShadow = shadow; m.receiveShadow = true; return m; }
 const pmCache = {};
 const pm = c => pmCache[c] || (pmCache[c] = new THREE.MeshLambertMaterial({ color: c }));
+/* ---- people: smooth lathe bodies, painted faces, rigged limbs, idle / walk / seated animation ---- */
 const SKINS = [0xf3d6bf, 0xe8c4a2, 0xd8aa82, 0xc4936a, 0xa06d48, 0x7a4b2e, 0x5a3520];
 const HAIRS = [0x15110e, 0x241a12, 0x3b2a1c, 0x5a3e28, 0x7a5434];
 const CLOTH = [0xd9563a, 0x2f8fb5, 0xf0c24b, 0x6ab04a, 0x8b6ab0, 0xe86a9a, 0xf3efe6, 0x14467e, 0x2a9d8f, 0xe8a87c, 0x9fc6d6, 0x3a3a3a, 0xf6d6e0, 0xb33a4a];
 const PANTS = [0x34363b, 0x2c3e5c, 0x6b5b45, 0xd8d2c4, 0x4a5a3a, 0x1f2a44];
-const PX = {
-  hairBob: new THREE.CylinderGeometry(0.128, 0.135, 0.15, 16, 1, true, -2.1, 4.2),
-  hairLong: new THREE.CylinderGeometry(0.128, 0.155, 0.44, 16, 1, true, -1.9, 3.8),
-  dress: new THREE.CylinderGeometry(0.17, 0.3, 0.56, 16), skirtSeat: new THREE.BoxGeometry(0.42, 0.1, 0.46),
-  eye: new THREE.SphereGeometry(0.015, 6, 5), brow: new THREE.BoxGeometry(0.05, 0.01, 0.01), mouth: new THREE.BoxGeometry(0.045, 0.008, 0.01),
-  pony: new THREE.SphereGeometry(1, 10, 8), shortLeg: new THREE.CylinderGeometry(0.075, 0.068, 1, 8), lowLeg: new THREE.CylinderGeometry(0.066, 0.058, 1, 8)
-};
 const pick = a => a[(rnd()*a.length)|0];
+// face atlas: 8 painted faces, multiplied by the skin colour
+const FACE_N = 8, FACE_W = 512, FACE_H = 128;
+const faceTex = (() => {
+  const c = document.createElement('canvas'); c.width = FACE_W; c.height = FACE_H*FACE_N; const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  const specs = [
+    { brow: 5.5, lip: '#c4847a', lash: 2.2 }, { brow: 6, lip: '#bc7f76', lash: 2.2, stubble: 1 }, { brow: 5, lip: '#b88078', lash: 2, old: 1 },
+    { brow: 3.4, lip: '#cf5f66', lash: 3.4, blush: 1, wing: 1 }, { brow: 3.2, lip: '#d8707a', lash: 3.2, blush: 1 }, { brow: 3.6, lip: '#b8505c', lash: 3.6, blush: 1, wing: 1 },
+    { brow: 3.6, lip: '#d08a84', lash: 2.4, blush: 1 }, { brow: 3, lip: '#e07c88', lash: 3, blush: 1 }
+  ];
+  specs.forEach((sp, k) => {
+    const top = (FACE_N - 1 - k)*FACE_H, X = az => 384 - az*FACE_W/(2*Math.PI), Y = el => top + (0.5 - el/Math.PI)*FACE_H;
+    const KX = FACE_W/(2*Math.PI), KY = FACE_H/Math.PI;
+    if (sp.blush) for (const s of [-1, 1]){ const gr = g.createRadialGradient(X(s*0.5), Y(-0.2), 0, X(s*0.5), Y(-0.2), 15); gr.addColorStop(0, 'rgba(255,170,170,.55)'); gr.addColorStop(1, 'rgba(255,170,170,0)'); g.fillStyle = gr; g.fillRect(X(s*0.5) - 16, Y(-0.2) - 16, 32, 32); }
+    if (sp.stubble){ g.fillStyle = 'rgba(150,135,120,.45)'; for (let i = 0; i < 700; i++){ const az = (Math.random() - 0.5)*1.5, el = -0.28 - Math.random()*0.55; if (Math.abs(az) < 0.22 && el > -0.52) continue; g.fillRect(X(az), Y(el), 1.4, 1.4); } }
+    g.lineCap = 'round';
+    for (const s of [-1, 1]){
+      // brow
+      g.strokeStyle = '#3a2a22'; g.lineWidth = sp.brow; g.beginPath(); g.moveTo(X(s*0.15), Y(0.3)); g.quadraticCurveTo(X(s*0.36), Y(0.4), X(s*0.58), Y(0.3)); g.stroke();
+      // upper lid + lashes
+      g.strokeStyle = '#1c1410'; g.lineWidth = sp.lash; g.beginPath(); g.ellipse(X(s*0.36), Y(0.08), 0.13*KX, 0.15*KY, 0, Math.PI*1.08, Math.PI*1.92); g.stroke();
+      if (sp.wing){ g.beginPath(); g.moveTo(X(s*0.47), Y(0.12)); g.lineTo(X(s*0.54), Y(0.17)); g.stroke(); }
+      // lower lid shadow
+      g.strokeStyle = 'rgba(120,90,80,.35)'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(X(s*0.36), Y(0.07), 0.11*KX, 0.12*KY, 0, Math.PI*0.15, Math.PI*0.85); g.stroke();
+      if (sp.old){ g.strokeStyle = 'rgba(110,85,70,.55)'; g.lineWidth = 1.3; g.beginPath(); g.moveTo(X(s*0.16), Y(-0.24)); g.quadraticCurveTo(X(s*0.26), Y(-0.38), X(s*0.24), Y(-0.52)); g.stroke(); }
+    }
+    if (sp.old){ g.strokeStyle = 'rgba(110,85,70,.45)'; g.lineWidth = 1.2; for (const el of [0.56, 0.64]){ g.beginPath(); g.moveTo(X(-0.35), Y(el)); g.quadraticCurveTo(X(0), Y(el + 0.04), X(0.35), Y(el)); g.stroke(); } }
+    // nose shadow + nostrils
+    g.fillStyle = 'rgba(170,120,105,.35)'; g.beginPath(); g.ellipse(X(0), Y(-0.24), 0.08*KX, 0.035*KY, 0, 0, Math.PI*2); g.fill();
+    // lips
+    g.fillStyle = sp.lip; g.beginPath(); g.ellipse(X(0), Y(-0.43), 0.17*KX, 0.058*KY, 0, 0, Math.PI*2); g.fill();
+    g.strokeStyle = 'rgba(90,40,40,.75)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(X(-0.17), Y(-0.42)); g.quadraticCurveTo(X(0), Y(-0.45), X(0.17), Y(-0.42)); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(X(0.03), Y(-0.455), 0.06*KX, 0.012*KY, 0, 0, Math.PI*2); g.fill();
+  });
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+})();
+const rigMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: faceTex, side: THREE.DoubleSide });
+const WHITE_UV = [0.1, 0.5];
+function mergeParts(parts){
+  let n = 0; const gs = parts.map(([geo, m, col, keepUV]) => { const g = (geo.index ? geo.toNonIndexed() : geo.clone()).applyMatrix4(m); n += g.attributes.position.count; return [g, col, keepUV]; });
+  const pos = new Float32Array(n*3), nor = new Float32Array(n*3), cl = new Float32Array(n*3), uv = new Float32Array(n*2); let o = 0;
+  for (const [g, col, keepUV] of gs){
+    const c = g.attributes.position.count; pos.set(g.attributes.position.array, o*3); nor.set(g.attributes.normal.array, o*3); _vc.set(col);
+    const u = g.attributes.uv;
+    for (let k = 0; k < c; k++){ const q = o + k; cl[q*3] = _vc.r; cl[q*3 + 1] = _vc.g; cl[q*3 + 2] = _vc.b; if (keepUV && u){ uv[q*2] = u.array[k*2]; uv[q*2 + 1] = u.array[k*2 + 1]; } else { uv[q*2] = WHITE_UV[0]; uv[q*2 + 1] = WHITE_UV[1]; } }
+    o += c; g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('color', new THREE.BufferAttribute(cl, 3)); out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return out;
+}
+function rigMesh(parts, shadow){ const m = new THREE.Mesh(mergeParts(parts), rigMat); m.castShadow = !!shadow; m.receiveShadow = true; return m; }
+// smooth limb: lathe from a radius profile, hanging down from y=0 to y=-len
+const LC = {};
+function limb(len, r0, r1, bulge = 0, bpos = 0.6){
+  const key = [len, r0, r1, bulge, bpos].join(); if (LC[key]) return LC[key];
+  const pts = [];
+  for (let i = 0; i <= 4; i++){ const a = -Math.PI/2 + i/4*Math.PI/2; pts.push(new THREE.Vector2(Math.max(0.0005, Math.cos(a)*r1), -len + Math.sin(a)*r1)); }
+  for (let i = 1; i < 10; i++){ const t = i/10, r = (r1 + (r0 - r1)*t)*(1 + bulge*Math.exp(-(((t - bpos)/0.2)**2))); pts.push(new THREE.Vector2(r, -len + t*len)); }
+  for (let i = 0; i <= 4; i++){ const a = i/4*Math.PI/2; pts.push(new THREE.Vector2(Math.max(0.0005, Math.cos(a)*r0), Math.sin(a)*r0)); }
+  return (LC[key] = new THREE.LatheGeometry(pts, 12));
+}
+function lathe(prof, segs = 14){ return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(0.0005, r), y)), segs); }
+const HG = {};
+function headGeo(k){ if (HG[k]) return HG[k]; const g = new THREE.SphereGeometry(0.105, 18, 14); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, (k + uv.getY(i))/FACE_N); return (HG[k] = g); }
+const PS = {
+  sph: new THREE.SphereGeometry(1, 12, 8), sphLo: new THREE.SphereGeometry(1, 8, 6), box: new THREE.BoxGeometry(1, 1, 1),
+  hairTop: new THREE.SphereGeometry(0.113, 18, 6, 0, Math.PI*2, 0, Math.PI*0.36),
+  hairBackS: new THREE.SphereGeometry(0.113, 18, 6, Math.PI*1.5 + 1.5, Math.PI*2 - 3.0, Math.PI*0.3, Math.PI*0.26),
+  hairBackL: new THREE.SphereGeometry(0.115, 18, 6, Math.PI*1.5 + 1.3, Math.PI*2 - 2.6, Math.PI*0.3, Math.PI*0.4),
+  hairRing: new THREE.SphereGeometry(0.112, 18, 4, Math.PI*1.5 + 1.5, Math.PI*2 - 3.0, Math.PI*0.42, Math.PI*0.17),
+  bangs: new THREE.SphereGeometry(0.117, 14, 4, Math.PI*1.5 - 1.1, 2.2, Math.PI*0.2, Math.PI*0.15),
+  longFall: new THREE.CylinderGeometry(0.108, 0.135, 0.36, 18, 1, true, -2.05, 4.1),
+  hat: new THREE.ConeGeometry(0.31, 0.19, 22), capTop: new THREE.SphereGeometry(0.119, 16, 6, 0, Math.PI*2, 0, Math.PI*0.5),
+  helmet: new THREE.SphereGeometry(0.128, 16, 8, 0, Math.PI*2, 0, Math.PI*0.6), collar: new THREE.TorusGeometry(0.062, 0.016, 6, 16), hem: new THREE.TorusGeometry(1, 0.06, 5, 20)
+};
+const HS = new THREE.Vector3(0.9, 1.1, 0.98), HC = new THREE.Vector3(0, 0.13, 0);
+const fdir = (az, el) => new THREE.Vector3(Math.sin(az)*Math.cos(el), Math.sin(el), -Math.cos(az)*Math.cos(el));
+const onHead = (az, el, k = 1) => { const d = fdir(az, el); return new THREE.Vector3(d.x*0.105*HS.x*k, d.y*0.105*HS.y*k, d.z*0.105*HS.z*k).add(HC); };
+const faceQ = (az, el) => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), fdir(az, el));
+const crowd = [];
 function person(x, y, z, o = {}){
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = o.ry || 0; (o.parent || scene).add(g);
-  const kid = o.kid ?? (!o.helmet && !o.hat && rnd() < 0.16);
-  const sex = o.sex || (rnd() < 0.5 ? 'f' : 'm');
+  const kid = o.kid ?? (!o.parent && !o.helmet && !o.hat && rnd() < 0.16);
+  const sex = o.sex || (rnd() < 0.5 ? 'f' : 'm'), fem = sex === 'f';
   const old = !kid && (o.old ?? rnd() < 0.12);
   const skin = o.skin || pick(SKINS);
   const hairC = o.hair || (old ? pick([0xbdb7ad, 0xd9d4cc, 0x8f8a83]) : pick(HAIRS));
-  const shirt = o.shirt || pick(CLOTH), pants = o.pants || pick(PANTS);
-  const seated = !!o.seated, ride = !!o.ride, hip = seated ? 0.47 : 0.9, up = hip - 0.9;
-  const fem = sex === 'f';
-  const hairStyle = o.hairStyle || (fem ? pick(['long', 'long', 'pony', 'bun', 'bob']) : (old && rnd() < 0.4 ? 'bald' : pick(['short', 'short', 'crew'])));
-  const dress = fem && !ride && (o.dress ?? rnd() < (kid ? 0.55 : 0.45));
+  const shirt = o.swim ? skin : o.shirt || pick(CLOTH);
+  let pants = o.pants || pick(PANTS);
+  const seated = !!o.seated && !o.lie, ride = !!o.ride, swim = !!o.swim, lie = !!o.lie;
+  const swimC = o.swimC || pick([0xd9363a, 0x1f2a44, 0xf0c24b, 0x2a9d8f, 0xe86a9a, 0xf3efe6, 0x2f8fb5, 0x111111, 0xf28c28]);
+  const hairStyle = o.hairStyle || (fem ? pick(kid ? ['pigtail', 'pony', 'bob'] : ['long', 'long', 'pony', 'bun', 'bob']) : (old && rnd() < 0.4 ? 'bald' : pick(['short', 'short', 'crew', 'side'])));
+  const dress = !swim && fem && !ride && (o.dress ?? rnd() < (kid ? 0.55 : 0.4));
   const dressC = o.dressC || pick([0xe86a9a, 0xf0c24b, 0x9fc6d6, 0xf6f1e4, 0xd9563a, 0x6ab04a, 0xb33a4a, 0x8b6ab0]);
-  const shorts = !dress && (kid || rnd() < 0.35);
-  const sw = fem ? 0.88 : 1;
-  const parts = [];
-  const add = (geo, col, px, py, pz, rx = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { parts.push([geo, PM(px, py, pz, rx, 0, rz, sx, sy, sz), col]); };
-  const shoe = pick([0x2a2522, 0xf3efe6, 0x8a5a3a, 0x2f6db0]);
-  for (const sx of [-1, 1]){
-    const lx = sx*0.1*sw;
-    if (seated){
-      add(PG.thigh, dress ? dressC : (shorts ? pants : pants), lx, hip, -0.2, Math.PI/2, 0, fem ? 0.9 : 1, 1, fem ? 0.9 : 1);
-      add(PG.leg, (dress || shorts) ? skin : pants, lx, hip/2 - 0.02, -0.42, ride ? 0.35 : 0, 0, fem ? 0.88 : 1, (hip - 0.04)/0.82, fem ? 0.88 : 1);
-      add(PG.shoe, shoe, lx, 0.04, -0.5);
-    } else if (dress){
-      add(PX.lowLeg, skin, lx, 0.25, 0, 0, 0, 0.9, 0.42, 0.9);
-      add(PG.shoe, shoe, lx, 0.04, -0.04, 0, 0, 0.9, 0.8, 0.9);
-    } else if (shorts){
-      add(PX.shortLeg, pants, lx, 0.72, 0, 0, 0, fem ? 0.9 : 1, 0.34, fem ? 0.9 : 1);
-      add(PX.lowLeg, skin, lx, 0.3, 0, 0, 0, fem ? 0.88 : 1, 0.52, fem ? 0.88 : 1);
-      add(PG.shoe, shoe, lx, 0.04, -0.04);
-    } else {
-      add(PG.leg, pants, lx, 0.45, 0, 0, 0, fem ? 0.88 : 1, 1, fem ? 0.88 : 1);
-      add(PG.shoe, shoe, lx, 0.04, -0.04);
+  const shorts = !dress && (swim || (o.shorts ?? (kid || rnd() < 0.3)));
+  const longSleeve = !swim && !dress && !kid && rnd() < (old ? 0.6 : 0.18);
+  const shoe = pick([0x2a2522, 0xf3efe6, 0x8a5a3a, 0x2f6db0, 0x6a6a6a]);
+  const iris = pick([0x2a1a12, 0x1c1410, 0x3a2618]);
+  if (swim) pants = fem ? skin : swimC;
+  const sw = fem ? 0.9 : 1, top = dress ? dressC : shirt;
+  const faceK = kid ? (fem ? 7 : 6) : fem ? 3 + ((rnd()*3)|0) : old ? 2 : ((rnd()*2)|0);
+  const pelvis = new THREE.Group(); pelvis.position.y = seated ? -0.43 : 0; g.add(pelvis);
+  // --- torso ---
+  const b = [], ZS = 0.62;
+  const prof = fem
+    ? [[0, 0.84], [0.12, 0.85], [0.168, 0.9], [0.165, 0.96], [0.14, 1.02], [0.12, 1.08], [0.13, 1.16], [0.148, 1.26], [0.148, 1.34], [0.14, 1.41], [0.09, 1.46], [0, 1.475]]
+    : [[0, 0.84], [0.12, 0.85], [0.162, 0.9], [0.16, 0.97], [0.145, 1.05], [0.142, 1.13], [0.158, 1.24], [0.172, 1.33], [0.165, 1.41], [0.1, 1.46], [0, 1.475]];
+  const split = 0.985, lower = prof.filter(p => p[1] <= split + 0.03), upper = prof.filter(p => p[1] >= split - 0.03);
+  const sc = PM(0, 0, 0, 0, 0, 0, sw, 1, ZS);
+  b.push([lathe(lower), sc, dress ? dressC : pants]);
+  b.push([lathe(upper), sc, top]);
+  if (!dress && !swim) b.push([PS.hem, PM(0, split, 0, Math.PI/2, 0, 0, 0.16*sw, 0.16*ZS, 0.25), fem ? top : 0x2a2522]);
+  if (swim && !fem) b.push([PS.hem, PM(0, 0.965, 0, Math.PI/2, 0, 0, 0.152, 0.152*ZS, 0.2), swimC]);
+  if (swim && fem){
+    b.push([lathe([[0.122, 0.835], [0.17, 0.885], [0.172, 0.93], [0.168, 0.945]], 16), PM(0, 0, 0, 0, 0, 0, sw*1.03, 1, ZS*1.05), swimC]);
+    b.push([PS.hem, PM(0, 1.3, 0.008, Math.PI/2, 0, 0, 0.146*sw, 0.146*ZS*1.04, 0.22), swimC]);
+    for (const s of [-1, 1]){ b.push([PS.sph, PM(s*0.054, 1.27, -0.07, 0, s*0.3, 0, 0.052, 0.046, 0.03), swimC]); b.push([PS.box, PM(s*0.06, 1.37, -0.04, 0.35, 0, s*0.12, 0.008, 0.11, 0.008), swimC]); }
+  }
+  if (fem) for (const s of [-1, 1]) b.push([PS.sph, PM(s*0.055, 1.27, -0.06, 0, s*0.25, 0, 0.05, 0.045, 0.03), top]);
+  for (const s of [-1, 1]) b.push([PS.sph, PM(s*0.162*sw, 1.398, 0, 0, 0, s*0.4, 0.058, 0.046, 0.056), top]);
+  if (!swim) b.push([PS.collar, PM(0, 1.462, 0, Math.PI/2, 0, 0, 1, 1, 0.75), dress ? dressC : (rnd() < 0.4 ? 0xf3efe6 : top)]);
+  b.push([limb(0.1, 0.045, 0.05), PM(0, 1.53, 0), skin]);
+  if (dress && !seated) b.push([lathe([[0.25, 0.47], [0.23, 0.6], [0.19, 0.8], [0.14, 0.98], [0.125, 1.02]], 16), PM(0, 0, 0, 0, 0, 0, sw, 1, 0.85), dressC]);
+  if (dress && seated) b.push([lathe([[0.2, 0.84], [0.16, 0.92], [0.13, 1.0]], 16), PM(0, 0, -0.04, 0, 0, 0, sw, 1, 1.1), dressC]);
+  const body = rigMesh(b, true); pelvis.add(body);
+  // --- head ---
+  const headPivot = new THREE.Group(); headPivot.position.y = 1.5; if (kid) headPivot.scale.setScalar(1.22); pelvis.add(headPivot);
+  const h = [];
+  h.push([headGeo(faceK), PM(HC.x, HC.y, HC.z, 0, 0, 0, HS.x, HS.y, HS.z), skin, true]);
+  for (const s of [-1, 1]){
+    h.push([PS.sph, PM(s*0.095, 0.125, 0.005, 0, 0, 0, 0.012, 0.024, 0.018), skin]);
+    const ep = onHead(s*0.36, 0.08, 0.93), eq = faceQ(s*0.36, 0.08);
+    h.push([PS.sph, new THREE.Matrix4().compose(ep, eq, new THREE.Vector3(kid ? 0.019 : 0.0165, kid ? 0.014 : 0.0115, 0.009)), 0xf6f2ea]);
+    const ip = onHead(s*0.34, 0.075, 1.0);
+    h.push([PS.sphLo, new THREE.Matrix4().compose(ip, eq, new THREE.Vector3(kid ? 0.0098 : 0.0085, kid ? 0.0108 : 0.0095, 0.004)), iris]);
+    h.push([PS.sphLo, new THREE.Matrix4().compose(onHead(s*0.335, 0.085, 1.035), eq, new THREE.Vector3(0.0026, 0.0026, 0.0015)), 0xffffff]);
+  }
+  h.push([PS.sph, new THREE.Matrix4().compose(onHead(0, -0.1, 0.98), faceQ(0, -0.1), new THREE.Vector3(fem ? 0.011 : 0.013, fem ? 0.017 : 0.02, 0.016)), skin]);
+  if (o.shades ?? (swim && !kid && rnd() < 0.55)){ for (const s of [-1, 1]) h.push([PS.sphLo, new THREE.Matrix4().compose(onHead(s*0.35, 0.08, 1.07), faceQ(s*0.35, 0.08), new THREE.Vector3(0.03, 0.022, 0.006)), 0x15181c]); h.push([PS.box, PM(0, 0.142, -0.112, 0, 0, 0, 0.03, 0.005, 0.005), 0x15181c]); }
+  const HM = PM(HC.x, HC.y, HC.z, 0, 0, 0, HS.x, HS.y, HS.z);
+  const hairOn = !o.helmet;
+  if (hairOn){
+    if (hairStyle === 'bald') h.push([PS.hairRing, HM, hairC]);
+    else {
+      h.push([PS.hairTop, PM(HC.x, HC.y, HC.z, 0, 0, 0, HS.x*(hairStyle === 'crew' ? 0.99 : 1.01), HS.y*(hairStyle === 'crew' ? 0.98 : 1.03), HS.z*1.01), hairC]);
+      h.push([['long', 'bob', 'pony', 'bun', 'pigtail'].includes(hairStyle) ? PS.hairBackL : PS.hairBackS, HM, hairC]);
+      if (fem) h.push([PS.bangs, HM, hairC]);
+      if (hairStyle === 'side') h.push([PS.sph, PM(0.035, 0.225, -0.035, 0, 0, -0.3, 0.07, 0.03, 0.06), hairC]);
+      if (hairStyle === 'long') h.push([PS.longFall, PM(0, -0.04, 0.01, 0, 0, 0, 1, 1, 0.82), hairC]);
+      if (hairStyle === 'bob') h.push([PS.longFall, PM(0, 0.06, 0.005, 0, 0, 0, 1.02, 0.42, 0.85), hairC]);
+      if (hairStyle === 'pony'){ h.push([PS.sph, PM(0, 0.05, 0.14, 0.35, 0, 0, 0.042, 0.13, 0.048), hairC]); h.push([PS.sphLo, PM(0, 0.15, 0.115, 0, 0, 0, 0.022, 0.022, 0.022), pick([0xd9563a, 0xf0c24b, 0x2f8fb5])]); }
+      if (hairStyle === 'bun') h.push([PS.sph, PM(0, 0.245, 0.065, 0, 0, 0, 0.055, 0.05, 0.055), hairC]);
+      if (hairStyle === 'pigtail') for (const s of [-1, 1]) h.push([PS.sph, PM(s*0.105, 0.06, 0.04, 0, 0, s*0.3, 0.035, 0.08, 0.035), hairC]);
     }
   }
-  if (dress && !seated) add(PX.dress, dressC, 0, 0.7, 0, 0, 0, sw, 1, sw*0.9);
-  else if (dress && seated) add(PX.skirtSeat, dressC, 0, hip + 0.02, -0.12);
-  else add(PG.hip, pants, 0, hip, 0, 0, 0, fem ? 1.06 : 1, 1, 1);
-  const top = dress ? dressC : shirt;
-  add(PG.torso, top, 0, 1.2 + up, 0, 0, 0, sw, 1, fem ? 0.88 : 1);
-  add(PG.shoulder, top, 0, 1.45 + up, 0, 0, 0, 1.05*sw, 0.45, 0.75);
-  const reach = seated ? (ride ? 1.05 : 0.6) : 0.08;
-  const arm = fem ? 0.85 : 1;
-  for (const sx of [-1, 1]){
-    add(PG.sleeve, top, sx*0.235*sw, 1.33 + up, -reach*0.1, -reach*0.5, sx*0.12, arm, 1, arm);
-    add(PG.fore, skin, sx*0.26*sw, 1.1 + up + reach*0.1, -reach*0.32, -reach*1.1, sx*0.06, arm, 1, arm);
-    add(PG.hand, skin, sx*0.26*sw, 0.95 + up + reach*0.25, -reach*0.5);
+  if (o.hat && !o.helmet) h.push([PS.hat, PM(0, 0.29, 0), 0xe9d9a6]);
+  else if (o.cap && !o.helmet){ h.push([PS.capTop, PM(HC.x, HC.y + 0.005, HC.z, 0, 0, 0, HS.x*1.02, HS.y*1.02, HS.z*1.02), o.cap]); h.push([PS.box, PM(0, 0.215, -0.13, -0.18, 0, 0, 0.17, 0.012, 0.12), o.cap]); }
+  if (o.helmet){ h.push([PS.helmet, PM(HC.x, HC.y + 0.01, HC.z, 0, 0, 0, HS.x, HS.y, HS.z), o.helmet]); h.push([PS.box, PM(0, 0.17, -0.128, 0.2, 0, 0, 0.19, 0.06, 0.012), 0x1c2a30]); if (hairStyle === 'long') h.push([PS.longFall, PM(0, -0.06, 0.01, 0, 0, 0, 1, 0.8, 0.82), hairC]); }
+  const head = rigMesh(h, true); headPivot.add(head);
+  // --- arms (shoulder and elbow pivots) ---
+  const arms = [], legs = [];
+  for (const s of [-1, 1]){
+    const ap = new THREE.Group(); ap.position.set(s*0.185*sw, 1.405, 0); pelvis.add(ap);
+    const ua = [[limb(0.28, 0.05*(fem ? 0.88 : 1), 0.04*(fem ? 0.88 : 1), 0.1, 0.75), PM(), longSleeve ? top : skin]];
+    if (!longSleeve && !swim) ua.push([limb(0.13, 0.062*(fem ? 0.9 : 1), 0.056*(fem ? 0.9 : 1)), PM(0, 0.01, 0), top]);
+    ap.add(rigMesh(ua, false));
+    const ep = new THREE.Group(); ep.position.y = -0.275; ap.add(ep);
+    const fa = [[limb(0.25, 0.042*(fem ? 0.88 : 1), 0.031*(fem ? 0.88 : 1), 0.12, 0.7), PM(), longSleeve ? top : skin]];
+    if (longSleeve) fa.push([limb(0.04, 0.034, 0.034), PM(0, -0.215, 0), skin]);
+    fa.push([PS.sph, PM(0, -0.29, -0.005, 0, 0, 0, 0.032, 0.05, 0.02), skin]);
+    fa.push([PS.sphLo, PM(-s*0.026, -0.272, -0.012, 0, 0, s*0.5, 0.011, 0.026, 0.011), skin]);
+    ep.add(rigMesh(fa, false));
+    arms.push({ p: ap, e: ep, s });
+    // legs (hip and knee pivots)
+    const lp = new THREE.Group(); lp.position.set(s*0.09*sw, 0.9, 0); pelvis.add(lp);
+    const legC = dress && !seated ? skin : (dress ? dressC : pants);
+    const th = [[limb(0.43, 0.082*(fem ? 0.95 : 1), 0.056, 0.08, 0.8), PM(), shorts ? skin : legC]];
+    if (shorts && !(swim && fem)) th.push([limb(swim ? 0.15 : 0.22, 0.092, 0.08), PM(0, 0.005, 0), pants]);
+    lp.add(rigMesh(th, false));
+    const kp = new THREE.Group(); kp.position.y = -0.43; lp.add(kp);
+    const sh = [[limb(0.41, 0.054*(fem ? 0.92 : 1), 0.034, 0.18, 0.62), PM(), (shorts || (dress && !seated)) ? skin : legC]];
+    if (dress && seated) sh[0][2] = skin;
+    sh.push([PS.sph, PM(0, -0.418, -0.045, 0, 0, 0, 0.046, 0.038, 0.112), swim ? skin : shoe]);
+    sh.push([PS.box, PM(0, -0.448, -0.042, 0, 0, 0, 0.096, 0.018, 0.235), swim ? swimC : 0x2a2522]);
+    kp.add(rigMesh(sh, false));
+    legs.push({ p: lp, k: kp, s });
   }
-  const hs = kid ? 1.22 : 1, hy = 1.71 + up + (kid ? 0.03 : 0);
-  add(PG.neck, skin, 0, 1.56 + up, 0, 0, 0, fem ? 0.85 : 1, 1, fem ? 0.85 : 1);
-  add(PG.head, skin, 0, hy, 0, 0, 0, hs*(fem ? 0.95 : 1), hs*1.12, hs*1.05);
-  add(PG.nose, skin, 0, hy - 0.01*hs, -0.115*hs, -Math.PI/2);
-  for (const sx of [-1, 1]){ add(PX.eye, 0x1a1412, sx*0.042*hs, hy + 0.015*hs, -0.1*hs); add(PX.brow, hairC, sx*0.042*hs, hy + 0.045*hs, -0.104*hs); }
-  add(PX.mouth, fem ? 0xb04a4a : 0x8a4a3a, 0, hy - 0.045*hs, -0.104*hs);
-  const hcap = (sy = 1) => add(PG.hair, hairC, 0, hy + 0.01, 0.01*hs, -0.15, 0, hs, hs*sy, hs);
-  if (o.helmet){ add(PG.helmet, o.helmet, 0, hy + 0.01, 0.01, 0, 0, hs, hs, hs); add(PG.visor, 0x1c2a30, 0, hy + 0.03, -0.135*hs); if (hairStyle === 'long') add(PX.hairLong, hairC, 0, hy - 0.2, 0.02, 0, 0, hs, 0.7, hs); }
-  else {
-    if (hairStyle === 'short') hcap();
-    else if (hairStyle === 'crew') hcap(0.92);
-    else if (hairStyle === 'bald') add(PX.hairBob, hairC, 0, hy - 0.02, 0, 0, 0, hs*0.98, 0.4, hs*0.98);
-    else if (hairStyle === 'bob'){ hcap(1.04); add(PX.hairBob, hairC, 0, hy - 0.05, 0, 0, 0, hs, hs, hs); }
-    else if (hairStyle === 'long'){ hcap(1.04); add(PX.hairLong, hairC, 0, hy - 0.17, 0.005, 0, 0, hs, hs, hs); }
-    else if (hairStyle === 'pony'){ hcap(1.04); add(PX.pony, hairC, 0, hy - 0.07, 0.15*hs, 0.35, 0, 0.05, 0.15, 0.055); add(PX.pony, pick([0xd9563a, 0xf0c24b, 0x2f8fb5]), 0, hy + 0.04, 0.12*hs, 0, 0, 0.025, 0.025, 0.025); }
-    else if (hairStyle === 'bun'){ hcap(1.04); add(PX.pony, hairC, 0, hy + 0.1*hs, 0.09*hs, 0, 0, 0.062, 0.062, 0.062); }
-    if (o.hat) add(PG.hat, 0xe9d9a6, 0, hy + 0.17*hs, 0, 0, 0, hs, hs, hs);
-    else if (o.cap){ add(PG.capTop, o.cap, 0, hy + 0.05, 0.01, 0, 0, hs, hs, hs); add(PG.brim, o.cap, 0, hy + 0.06, -0.15*hs); }
+  const rig = { pelvis, body, headPivot, arms, legs, seated, ride, kid, old, base: pelvis.position.y, hy: 1.5, ph: rnd()*6.28, br: rnd()*6.28, tl: rnd()*4, tyaw: 0, tpitch: 0, dk: 3 + rnd()*9, drink: 0 };
+  poseRest(rig);
+  if (old) headPivot.rotation.x = 0.12;
+  if (lie){
+    const kneeUp = o.knee ?? rnd() < 0.5;
+    arms[0].p.rotation.set(0, 0, -0.32); arms[1].p.rotation.set(o.armUp ? -2.7 : 0, 0, o.armUp ? 0.2 : 0.32); arms[0].e.rotation.x = 0.1; arms[1].e.rotation.x = o.armUp ? 0.5 : 0.1;
+    if (kneeUp){ legs[1].p.rotation.x = 0.75; legs[1].k.rotation.x = -1.45; }
+    legs[0].p.rotation.z = -0.05; headPivot.rotation.x = -0.25;
+    pelvis.rotation.x = Math.PI/2; pelvis.position.set(0, 0.105, -0.85);
   }
-  g.add(coloredMesh(parts));
-  if (kid) g.scale.setScalar(0.64); else if (fem) g.scale.setScalar(0.95);
-  if (!seated && !o.parent) obsAround(x, z, 0.3, y, y + 1.7);
+  g.userData.rig = rig;
+  if (kid) g.scale.setScalar(0.66); else if (fem) g.scale.setScalar(0.95);
+  if ((o.parent && !o.anim) || lie) bakeRig(g);
+  else if (!o.parent) crowd.push({ g, rig, kind: o.walk ? 'walk' : seated ? 'seat' : 'idle' });
+  if (!seated && !lie && !o.parent && !o.walk) obsAround(x, z, 0.3, y, y + 1.7);
+  return g;
+}
+function poseRest(r){
+  for (const a of r.arms){ a.p.rotation.set(r.seated ? (r.ride ? 1.0 : 0.45) : 0.04, 0, a.s*0.07); a.e.rotation.set(r.seated ? (r.ride ? 0.35 : 0.9) : 0.14, 0, 0); }
+  for (const l of r.legs){ l.p.rotation.set(r.seated ? (r.ride ? 1.25 : Math.PI/2) : 0, 0, r.seated ? l.s*0.05 : 0); l.k.rotation.set(r.seated ? (r.ride ? -1.05 : -Math.PI/2) : 0, 0, 0); }
+}
+function bakeRig(g){
+  g.updateMatrixWorld(true); const inv = new THREE.Matrix4().copy(g.matrixWorld).invert(), list = [];
+  g.traverse(m => { if (m.isMesh) list.push([m.geometry, new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld)]); });
+  let n = 0; for (const [geo] of list) n += geo.attributes.position.count;
+  const A = { position: new Float32Array(n*3), normal: new Float32Array(n*3), color: new Float32Array(n*3), uv: new Float32Array(n*2) }; let o = 0;
+  for (const [geo, m] of list){ const t = geo.clone().applyMatrix4(m), c = t.attributes.position.count; A.position.set(t.attributes.position.array, o*3); A.normal.set(t.attributes.normal.array, o*3); A.color.set(geo.attributes.color.array, o*3); A.uv.set(geo.attributes.uv.array, o*2); o += c; t.dispose(); geo.dispose(); }
+  const out = new THREE.BufferGeometry(); for (const [k, v] of Object.entries(A)) out.setAttribute(k, new THREE.BufferAttribute(v, k === 'uv' ? 2 : 3));
+  for (const ch of [...g.children]) g.remove(ch);
+  const m = new THREE.Mesh(out, rigMat); m.castShadow = true; m.receiveShadow = true; g.add(m); delete g.userData.rig;
+}
+const ez = (o, k, v, a) => { o[k] += (v - o[k])*a; };
+function lookAround(r, dt, calm = 1){
+  r.tl -= dt; if (r.tl < 0){ r.tl = 2 + Math.random()*5; r.tyaw = (Math.random() - 0.5)*1.3*calm; r.tpitch = (Math.random() - 0.4)*0.3; }
+  const a = Math.min(1, dt*2.2); ez(r.headPivot.rotation, 'y', r.tyaw, a); ez(r.headPivot.rotation, 'x', r.tpitch + (r.old ? 0.12 : 0), a);
+}
+function animIdle(r, dt){
+  r.br += dt*1.7; const b = Math.sin(r.br), a = Math.min(1, dt*5);
+  r.headPivot.position.y = r.hy + b*0.004; r.body.scale.z = 1 + b*0.018;
+  lookAround(r, dt);
+  if (!r.seated){
+    for (const x of r.arms){ ez(x.p.rotation, 'x', 0.04 + b*0.01, a); x.p.rotation.z = x.s*(0.07 + b*0.012); ez(x.e.rotation, 'x', 0.14, a); }
+    for (const l of r.legs){ ez(l.p.rotation, 'x', 0, a); ez(l.k.rotation, 'x', 0, a); }
+    ez(r.pelvis.position, 'y', r.base, a); ez(r.pelvis.rotation, 'y', 0, a); r.pelvis.rotation.z = Math.sin(r.br*0.23)*0.018;
+  } else if (!r.ride){
+    r.dk -= dt; if (r.dk < 0 && r.drink <= 0){ r.drink = 2.6; r.dk = 6 + Math.random()*9; }
+    const R0 = r.arms[1];
+    if (r.drink > 0){ r.drink -= dt; ez(R0.p.rotation, 'x', 0.95, a*0.6); ez(R0.e.rotation, 'x', 2.15, a*0.6); ez(R0.p.rotation, 'z', -0.15, a); r.headPivot.rotation.x += (-0.12 - r.headPivot.rotation.x)*a; }
+    else { ez(R0.p.rotation, 'x', 0.45, a*0.6); ez(R0.e.rotation, 'x', 0.9, a*0.6); ez(R0.p.rotation, 'z', R0.s*0.07, a); }
+  }
+}
+function animWalk(r, dt, speed){
+  r.ph += dt*speed*(r.kid ? 7.2 : 5.4); const s = Math.sin(r.ph), c = Math.cos(r.ph), a = Math.min(1, dt*8);
+  const [L, Rr] = r.legs;
+  L.p.rotation.x = s*0.5; Rr.p.rotation.x = -s*0.5;
+  L.k.rotation.x = -Math.max(0, c)*0.85 - 0.06; Rr.k.rotation.x = -Math.max(0, -c)*0.85 - 0.06;
+  const [AL, AR] = r.arms;
+  AL.p.rotation.x = -s*0.45; AR.p.rotation.x = s*0.45; AL.p.rotation.z = -0.09; AR.p.rotation.z = 0.09;
+  AL.e.rotation.x = 0.28 + Math.max(0, AL.p.rotation.x)*0.6; AR.e.rotation.x = 0.28 + Math.max(0, AR.p.rotation.x)*0.6;
+  r.pelvis.position.y = r.base + (1 - Math.abs(s))*0.032 - 0.012; r.pelvis.rotation.y = s*0.07; r.pelvis.rotation.z = 0;
+  r.br += dt*2.4; r.body.scale.z = 1 + Math.sin(r.br)*0.012;
+  lookAround(r, dt, 0.4);
+}
+const camPos = new THREE.Vector3();
+function updateCrowd(dt){
+  camera.getWorldPosition(camPos);
+  for (const c of crowd){
+    const d2 = (c.g.position.x - camPos.x)**2 + (c.g.position.z - camPos.z)**2;
+    c.g.visible = d2 < 120*120; if (d2 > 60*60) continue;
+    if (c.kind !== 'walk'){ animIdle(c.rig, dt); continue; }
+    if (c.wait > 0){ c.wait -= dt; animIdle(c.rig, dt); continue; }
+    const [tx, tz] = c.pts[c.i], dx = tx - c.g.position.x, dz = tz - c.g.position.z, dist = Math.hypot(dx, dz);
+    if (dist < 0.25){ c.i += c.dir; if (c.i < 0 || c.i >= c.pts.length){ c.dir *= -1; c.i += 2*c.dir; c.wait = 1 + Math.random()*3; } continue; }
+    const yaw = Math.atan2(-dx, -dz); let dy = yaw - c.g.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); c.g.rotation.y += dy*Math.min(1, dt*4);
+    const st = Math.min(dist, c.speed*dt); c.g.position.x += dx/dist*st; c.g.position.z += dz/dist*st;
+    c.g.position.y = typeof c.y === 'function' ? c.y(c.g.position.x, c.g.position.z) : c.y;
+    animWalk(c.rig, dt, c.speed);
+  }
+}
+function walker(pts, y, o = {}){
+  const [x, z] = pts[0], y0 = typeof y === 'function' ? y(x, z) : y;
+  const g = person(x, y0, z, Object.assign({ walk: true }, o));
+  const c = crowd[crowd.length - 1]; Object.assign(c, { pts, y, i: 1, dir: 1, wait: Math.random()*2, speed: c.rig.kid ? 1.0 : 1.05 + Math.random()*0.3 });
   return g;
 }
 /* ---- seafood and dish models: merged, vertex-coloured, sized in metres ---- */
@@ -993,7 +1187,7 @@ function table(x, y, z, top = 0x8a6a48){
     const draw = () => { g2.fillStyle = '#1d2a24'; g2.fillRect(0, 0, 768, 576); g2.strokeStyle = '#d8af57'; g2.lineWidth = 10; g2.strokeRect(12, 12, 744, 552);
       g2.fillStyle = '#f4d58a'; g2.font = "800 46px 'Alegreya',Georgia,serif"; g2.textAlign = 'center'; g2.fillText('THỰC ĐƠN HẢI SẢN', 384, 72);
       g2.font = "500 28px 'Be Vietnam Pro',system-ui,sans-serif"; g2.textAlign = 'left';
-      MENU_FOOD.forEach((m, i) => { g2.fillStyle = '#f4ead8'; g2.fillText(m.name, 48, 132 + i*48); g2.fillStyle = '#f4d58a'; g2.textAlign = 'right'; g2.fillText(m.price.toLocaleString('vi-VN') + 'đ', 720, 132 + i*48); g2.textAlign = 'left'; });
+      MENU_FOOD.forEach((m, i) => { g2.fillStyle = '#f4ead8'; g2.fillText(m.name, 48, 132 + i*48); g2.fillStyle = '#f4d58a'; g2.textAlign = 'right'; g2.fillText((m.price/1000) + ' vỏ sò', 720, 132 + i*48); g2.textAlign = 'left'; });
       tex.needsUpdate = true; };
     draw(); signs.push(draw);
     const b = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), new THREE.MeshLambertMaterial({ map: tex })); b.position.set(23, 3.1, 27.86); b.rotation.y = Math.PI; scene.add(b); }
@@ -1028,7 +1222,7 @@ function table(x, y, z, top = 0x8a6a48){
     box(5.6, 1.1, 0.8, mat.timber, cx, 1.55, 22.7); box(5.6, 0.06, 0.9, mat.tank, cx, 2.13, 22.7); addObs(cx - 2.8, cx + 2.8, 22.3, 23.1, 1, 2.2);
     box(0.5, 0.35, 0.4, mat.dark, cx + 1.4, 2.3, 22.7);
     person(cx - 0.6, 1, 23.9, { shirt: 0x14467e, ry: Math.PI });
-    makeSign('GIÁ VÉ 150.000đ / KHÁCH', 4.4, 1.1, cx, 3.5, z1 - 0.14, Math.PI, { bg: '#f7f1e3', fg: '#14467e', border: '#14467e', sub: 'Tàu đáy kính ngắm san hô · khoảng 1 giờ · có áo phao' });
+    makeSign('GIÁ VÉ 150 vỏ sò / KHÁCH', 4.4, 1.1, cx, 3.5, z1 - 0.14, Math.PI, { bg: '#f7f1e3', fg: '#14467e', border: '#14467e', sub: 'Tàu đáy kính ngắm san hô · khoảng 1 giờ · có áo phao' });
     makeSign('RẠN SAN HÔ VĨNH HY', 3.6, 1.6, x0 + 0.14, 2.9, 20.5, Math.PI/2, { bg: '#1d6f7a', fg: '#ffe9a8', border: '#f0c24b', sub: 'Hơn 300 loài san hô · khu dự trữ sinh quyển Núi Chúa', subFg: '#e9fbff' });
     makeSign('HANG YẾN · MŨI CÁ HEO', 3.6, 1.6, x1 - 0.14, 2.9, 20.5, -Math.PI/2, { bg: '#14467e', fg: '#f4d58a', sub: 'Lộ trình tàu quanh vịnh', subFg: '#e9fbff' });
     box(0.5, 0.45, 3.2, mat.timber, 12.9, 1.22, 19.5); addObs(12.6, 13.2, 17.9, 21.1, 1, 1.5);
@@ -1279,7 +1473,7 @@ addWalk(96, 120, -78, -32, 0.38);
   for (const wx of [99.2, 101.8]){ box(1.3, 0.9, 0.05, mat.dark, wx, 1.65, -67.97); box(1.5, 0.08, 0.4, mat.timber, wx, 1.2, -67.8); person(wx, 0.34, -69.2, { parent: scene, shirt: 0xf3efe6, pants: 0x2a2522 }); }
   makeSign('MÔ TÔ NƯỚC', 1.3, 0.3, 99.2, 2.24, -67.94, 0, { bg: '#d9561e', fg: '#ffffff', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 700, size: 0.6 });
   makeSign('PHAO CHUỐI', 1.3, 0.3, 101.8, 2.24, -67.94, 0, { bg: '#f0b429', fg: '#0f3560', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 700, size: 0.6 });
-  makeSign('PHÒNG VÉ BẾN AMANOI', 4.8, 0.66, 100.5, 2.78, -67.93, 0, { bg: '#1f1a16', fg: '#e8dcc2', border: false, weight: 500, sub: 'Mô tô nước 500.000đ · Phao chuối 250.000đ', subFg: '#d8af57' });
+  makeSign('PHÒNG VÉ BẾN AMANOI', 4.8, 0.66, 100.5, 2.78, -67.93, 0, { bg: '#1f1a16', fg: '#e8dcc2', border: false, weight: 500, sub: 'Mô tô nước 500 vỏ sò · Phao chuối 250 vỏ sò', subFg: '#d8af57' });
   cyl(0.06, 0.06, 1.6, mat.timberDark, 96.4, 1.1, -41.2, 6);
   makeSign('MÔ TÔ NƯỚC', 2, 0.5, 96.45, 2.0, -41.2, Math.PI/2, { bg: '#d9561e', fg: '#ffffff', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 700, size: 0.6 });
   cyl(0.06, 0.06, 1.6, mat.timberDark, 96.4, 1.1, -58.4, 6);
@@ -1615,7 +1809,7 @@ let looShuttle = null;
   };
   looShuttle = shuttleCar(); looShuttle.position.set(50, 1.0, 12.4); looShuttle.rotation.y = -Math.PI/2;
   cyl(0.05, 0.05, 2.6, mat.metal, 47.8, 2.3, 14.8, 6);
-  makeSign('XE ĐIỆN ĐI SUỐI LỒ Ồ', 2.4, 0.75, 47.8, 3.4, 14.74, Math.PI, { bg: '#2f7a4a', fg: '#ffffff', border: '#ffffff', font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 700, size: .5, sub: 'Ghé Vườn nhà Bà Hương · 50.000đ', subFg: '#ffffff' });
+  makeSign('XE ĐIỆN ĐI SUỐI LỒ Ồ', 2.4, 0.75, 47.8, 3.4, 14.74, Math.PI, { bg: '#2f7a4a', fg: '#ffffff', border: '#ffffff', font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 700, size: .5, sub: 'Ghé Vườn nhà Bà Hương · 50 vỏ sò', subFg: '#ffffff' });
 }
 // small offshore islets
 for (const [ix, iz, s] of [[-40, -430, 28], [110, -390, 18], [-160, -330, 14]]){
@@ -1835,6 +2029,27 @@ function puff(x, y, z, n = 6, o = {}){
 }
 
 /* ---------------- stairs mesh + finalize ---------------- */
+// people strolling around the village, beaches, pier, Amanoi and the Lồ Ồ road
+walker([[-55, 3.2], [-20, 3.6], [30, 3.3]], 1); walker([[30, 2.8], [-8, 3.0], [-50, 2.6]], 1, { sex: 'f' }); walker([[-40, 3.8], [25, 3.9]], 1, { kid: true }); walker([[10, 2.4], [-30, 2.2]], 1, { sex: 'm', old: true });
+walker([[-60, 14.8], [58, 15.2]], 1); walker([[-58, 3.0], [26, 3.2]], 1, { swim: true, sex: 'f', hairStyle: 'long' }); walker([[24, 2.7], [-56, 2.5]], 1, { swim: true, sex: 'm' }); walker([[56, 15.4], [-58, 15.0]], 1, { sex: 'f' }); walker([[-20, 15.1], [40, 15.3]], 1, { sex: 'f', kid: true });
+walker([[-110, 2.6], [-79, 2.4]], 0.38, { swim: true, sex: 'm' }); walker([[-79, 1.2], [-110, 1.0]], 0.38, { swim: true, sex: 'f', hairStyle: 'long' }); walker([[-108, 1.8], [-80, 1.6]], 0.38, { swim: true, sex: 'f', hairStyle: 'pony' }); walker([[-112, -5], [-72, -6]], 0.38, { kid: true, shorts: true });
+walker([[0.4, -3], [0.4, -44]], 1); walker([[-0.6, -42], [-0.6, -4]], 1, { sex: 'f' });
+walker([[101, -76], [102, -37]], 0.38, { swim: true, sex: 'f', hairStyle: 'long' }); walker([[98.5, -40], [98.5, -74]], 0.38, { swim: true, sex: 'f', hairStyle: 'bun' }); walker([[99.5, -72], [99.5, -42]], 0.38, { swim: true, sex: 'm' }); walker([[103.5, -40], [103.5, -74]], 0.38, { shorts: true });
+walker([[142, -62], [176, -63]], 24, { sex: 'f' }); walker([[160, -78], [160, -64]], 24, { sex: 'm', shirt: 0xf3efe6 });
+walker([[78.8, 22], [78.8, 110]], (x, z) => eastH(z)); walker([[76.2, 108], [76.2, 24]], (x, z) => eastH(z), { sex: 'f' });
+walker([[72.5, 128], [72.5, 146]], 12, { sex: 'f' }); walker([[-56, 72], [-41, 72.5]], 14);
+// sunbathers on beach towels under the umbrellas
+const TOWELS = [0xf0c24b, 0x2f8fb5, 0xe86a9a, 0xf3efe6, 0x2a9d8f, 0xd9563a];
+function sunbather(x, y, z, ry, o = {}){
+  const t = box(0.95, 0.02, 1.95, L(pick(TOWELS)), x, y + 0.01, z); t.rotation.y = ry; t.castShadow = false;
+  for (const s of [-1, 1]) { const st = box(0.95, 0.021, 0.12, L(0xf3efe6), x + Math.sin(ry)*s*0.75, y + 0.012, z + Math.cos(ry)*s*0.75); st.rotation.y = ry; st.castShadow = false; }
+  return person(x, y + 0.02, z, Object.assign({ lie: true, swim: true, ry, kid: false }, o));
+}
+sunbather(-108.6, 0.36, 5.6, 0, { sex: 'f', hairStyle: 'long' }); sunbather(-104.2, 0.36, 5.4, 0.1, { sex: 'f', armUp: true });
+sunbather(-97.4, 0.36, 5.6, -0.1, { sex: 'm' }); sunbather(-96.2, 0.36, 5.5, 0.05, { sex: 'f', hairStyle: 'bun', armUp: true });
+sunbather(-88.5, 0.36, 5.6, 0, { sex: 'f', hairStyle: 'pony' }); sunbather(-82, 0.36, 5.5, 0.15, { sex: 'm', armUp: true });
+sunbather(107.6, 0.34, -71.5, Math.PI/2, { sex: 'f', hairStyle: 'long', armUp: true }); sunbather(107.6, 0.34, -66, Math.PI/2, { sex: 'f' });
+sunbather(107.6, 0.34, -63.4, Math.PI/2, { sex: 'm' }); sunbather(102.4, 0.34, -46.5, Math.PI, { sex: 'f', hairStyle: 'bob' });
 buildSteps();
 
 /* ---------------- audio (Web Audio, no files) ---------------- */
@@ -1893,7 +2108,7 @@ const SPOTS = 17;
 const P = { x: 0, z: 8.5, feet: 1, yaw: 0, pitch: -0.04, camY: 1 + EYE };
 let mode = 'walk';           // walk | busy | boat | glass | fade
 let busy = null, eyeOff = 0, lastStep = -1, lastTop = 1;
-const vnd = n => n.toLocaleString('vi-VN') + 'đ';
+const vnd = n => (Math.round(n/1000)).toLocaleString('vi-VN') + ' vỏ sò';
 
 let toastTimer = 0;
 function toast(title, text, ms = 3200){ const el = $('toast'); el.innerHTML = (title ? `<b>${title}</b>` : '') + (text || ''); el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), ms); }
@@ -2049,17 +2264,17 @@ const acts = [
   { x: -7, z: 14.0, y: 1, r: 2.0, label: 'Ăn bánh căn', fn: () => { tables.banhcan = [-7.6, 1.98, 15.2]; puff(-7, 2.1, 15.2, 10, { size: .2, op: .45 }); order('banhcan', 'banhcan', 'khuôn đất nung nóng hổi'); } },
   { x: -15.4, z: 4.6, y: 1, r: 2.4, label: 'Xem ngư dân vá lưới', fn: () => { toast('Ngư dân vá lưới', 'Thuyền thúng đan tre, quét dầu rái, là phương tiện ra ghe của làng chài.', 4200); tone(220, .25, 'triangle', .04); setTimeout(() => tone(240, .25, 'triangle', .04), 400); startBusy({ dur: 3, drop: 0.5, pitch: -0.35 }); } },
   { x: 1.2, z: -34, y: 1, r: 2.8, label: () => hasT('tau') ? 'Đưa vé & lên tàu đáy kính' : 'Lên tàu đáy kính (cần vé)', fn: boardBoat },
-  { x: 8.75, z: 21.4, y: 1, r: 2.2, label: () => hasT('tau') ? 'Bạn đã có vé · ra cầu tàu' : 'Mua vé tàu đáy kính · 150.000đ', fn: buyTicket },
-  { x: 99.2, z: -66.7, y: 0.38, r: 1.3, label: () => hasT('jet') ? 'Bạn đã có vé mô tô nước' : 'Mua vé mô tô nước · 500.000đ', fn: () => buyWater('jet') },
-  { x: 101.8, z: -66.7, y: 0.38, r: 1.3, label: () => hasT('banana') ? 'Bạn đã có vé phao chuối' : 'Mua vé phao chuối · 250.000đ', fn: () => buyWater('banana') },
+  { x: 8.75, z: 21.4, y: 1, r: 2.2, label: () => hasT('tau') ? 'Bạn đã có vé · ra cầu tàu' : 'Mua vé tàu đáy kính · 150 vỏ sò', fn: buyTicket },
+  { x: 99.2, z: -66.7, y: 0.38, r: 1.3, label: () => hasT('jet') ? 'Bạn đã có vé mô tô nước' : 'Mua vé mô tô nước · 500 vỏ sò', fn: () => buyWater('jet') },
+  { x: 101.8, z: -66.7, y: 0.38, r: 1.3, label: () => hasT('banana') ? 'Bạn đã có vé phao chuối' : 'Mua vé phao chuối · 250 vỏ sò', fn: () => buyWater('banana') },
   { x: 97.4, z: -45, y: 0.38, r: 2.4, label: () => hasT('jet') ? 'Lái mô tô nước' : 'Lái mô tô nước (cần vé)', fn: startJet },
   { x: 97.4, z: -55.5, y: 0.38, r: 2.2, label: () => hasT('banana') ? 'Lên phao chuối' : 'Lên phao chuối (cần vé)', fn: startBanana },
-  { x: 76.5, z: -68.3, y: 1, r: 2.2, label: () => st.returnTrip ? 'Đón tàu đáy kính về làng chài (lượt về)' : 'Đi tàu đáy kính về làng chài · 80.000đ', fn: boardReturn },
+  { x: 76.5, z: -68.3, y: 1, r: 2.2, label: () => st.returnTrip ? 'Đón tàu đáy kính về làng chài (lượt về)' : 'Đi tàu đáy kính về làng chài · 80 vỏ sò', fn: boardReturn },
   { x: 49, z: -29.3, y: 1.25, r: 2.4, label: 'Gọi món ở nhà hàng Resort Vĩnh Hy', fn: () => order('resort', 'resort', 'nhà hàng sát mép vịnh') },
   { x: 49.5, z: -7.6, y: 1, r: 2.2, label: 'Chụp ảnh hồ bơi Resort Vĩnh Hy', fn: () => takePhoto('Resort Vĩnh Hy') },
   { x: -42, z: 5.6, y: 1, r: 2.4, label: 'Ăn vặt ở chợ đêm', fn: () => order('night', 'night', 'chợ đêm ven bờ kè') },
   { x: -72, z: -1.2, y: 0.38, r: 2.4, label: 'Xem chợ cá', fn: () => { toast('Chợ cá Vĩnh Hy', 'Khoảng 5–6 giờ sáng, ghe đánh đêm cập bến, cá mực được bày bán ngay trên bãi cát.', 4800); startBusy({ dur: 3, drop: 0.3, pitch: -0.4 }); } },
-  { x: 50, z: 14.8, y: 1, r: 2.4, label: 'Đi xe điện lên suối Lồ Ồ · 50.000đ', fn: rideShuttle },
+  { x: 50, z: 14.8, y: 1, r: 2.4, label: 'Đi xe điện lên suối Lồ Ồ · 50 vỏ sò', fn: rideShuttle },
   { x: 84, z: 121.2, y: 11.5, r: 2.6, label: 'Xe điện về làng Vĩnh Hy', fn: () => startCar('bahuong', true) },
   { x: 80.5, z: 156.4, y: 15, r: 2.4, label: 'Xe điện về làng Vĩnh Hy', fn: () => startCar('falls', true) },
   { x: 76, z: 131.6, y: 12, r: 2.2, label: 'Gọi đồ ở Vườn nhà Bà Hương', fn: () => order('bahuong', 'bahuong', 'chòi lá bên dòng suối') },
@@ -2115,7 +2330,7 @@ function useT(k, stamp){
 function buyTicket(){
   if (hasT('tau')){ toast('Bạn đã có vé', 'Ra cầu tàu, lại gần chiếc tàu có mũi tên vàng để lên tàu.'); return; }
   const no = buyT('tau');
-  toast('Đã mua vé tàu đáy kính', `Vé số ${no} · 150.000đ. Vé ở góc trái màn hình. Băng qua đường ra cầu tàu để lên tàu.`, 5200);
+  toast('Đã mua vé tàu đáy kính', `Vé số ${no} · 150 vỏ sò. Vé ở góc trái màn hình. Băng qua đường ra cầu tàu để lên tàu.`, 5200);
   startBusy({ dur: 2.2, pitch: -0.18 });
 }
 function buyWater(k){
@@ -2287,7 +2502,7 @@ const carMarks = [
   { p: V3(77.5, 10, 104), t: 'Rừng Núi Chúa', m: 'Cây bụi khô nhường chỗ cho rừng cây cao, không khí mát dần.' }
 ];
 function rideShuttle(){
-  openChoice('Xe điện đưa đón suối Lồ Ồ', 'Vé khứ hồi 50.000đ. Chọn điểm xuống xe:', [
+  openChoice('Xe điện đưa đón suối Lồ Ồ', 'Vé khứ hồi 50 vỏ sò. Chọn điểm xuống xe:', [
     { label: 'Ghé Vườn nhà Bà Hương', right: 'cà phê bên suối' },
     { label: 'Lên thẳng chân thác suối Lồ Ồ', right: 'tắm suối, bàn đá' }
   ], i => startCar(i === 0 ? 'bahuong' : 'falls', false));
@@ -2618,7 +2833,7 @@ let last = performance.now(), T = 0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last)/1000); last = now; T += dt;
-  updatePlayer(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
+  updatePlayer(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
   sky.position.copy(camera.position);
   const fx = camera.position.x, fz = camera.position.z, fy = Math.max(0, camera.position.y - 2);
   sun.target.position.set(fx, fy, fz); sun.position.set(fx + sunDir.x*200, fy + sunDir.y*200, fz + sunDir.z*200);
