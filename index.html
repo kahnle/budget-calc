@@ -71,6 +71,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .lightbox img{display:block;width:100%}
 .lightbox figcaption{color:#3a2d20;font:600 15px var(--display);padding:8px 2px 2px;text-align:center}
 .ridebar{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:10px 12px;max-width:94vw}
+#nhauQuay{background:#8e1b12;border-color:#f0c24b;color:#fff3dc}
 .ridebar .where{flex-basis:100%;text-align:center;font-weight:600;font-size:13px;color:var(--sea)}
 .glass{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .8s}
 .glass.on{opacity:1}
@@ -143,6 +144,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <button id="rideNext" type="button" hidden>Đi tiếp</button>
   <button id="rideLand" type="button" hidden>Lên bến Amanoi</button>
   <button id="rideDive" type="button" hidden>Lặn xuống ngắm san hô</button>
+  <button id="nhauDzo" type="button" hidden>🍻 Dzô! Cụng ly</button>
+  <button id="nhauMoi" type="button" hidden>Gọi thêm khô mực · 60 vỏ sò</button>
+  <button id="nhauQuay" type="button" hidden>Quậy phá</button>
   <button id="rideEnd" type="button">Về bến</button>
 </div>
 
@@ -393,6 +397,7 @@ function amStairH(z){ const t = 6 - z; if (t < 0) return 1; if (t < 14.4) return
 const zones = [
   { x0: -64, x1: 64, z0: 3, z1: 44, h: () => 0.85, f: 10 },
   { x0: 60, x1: 164, z0: 4, z1: 16, h: () => 0.85, f: 8 },
+  { x0: 81, x1: 97, z0: 14, z1: 29, h: () => 0.75, f: 5 },
   { x0: -118, x1: -60, z0: -26, z1: 44, h: (x, z) => z > -8 ? 0.34 : 0.34 + (z+8)*0.05, f: 10 },
   { x0: -53, x1: -43, z0: 38, z1: 68, h: (x, z) => vpStairH(z) - 0.5, f: 6 },
   { x0: -60, x1: -36, z0: 66, z1: 78, h: () => 13.5, f: 10 },
@@ -1846,7 +1851,115 @@ for (const [ix, iz, s] of [[-40, -430, 28], [110, -390, 18], [-160, -330, 14]]){
 for (let i = 0; i < 14; i++){ const x = R(86, 140), z = R(18, 30); const h = terrainH(x, z); if (h < 4) cactus(x, h, z, R(.7, 1.1)); }
 // grape vineyard by the road
 for (let r = 0; r < 5; r++){ const z = 22 + r*3; for (let x = 100; x <= 132; x += 4){ const h = terrainH(x, z); cyl(0.05, 0.05, 1.8, mat.timberDark, x, h + 0.9, z, 5); } const hm = terrainH(116, z); const v = box(32, 0.5, 0.9, mat.leaf, 116, hm + 1.8, z); v.castShadow = true; }
-for (let x = 94; x < 146; x += 16) palm(x, 1, 15.5 + R(0, 1));
+for (let x = 110; x < 146; x += 16) palm(x, 1, 15.5 + R(0, 1));
+/* ---------------- nhậu vỉa hè (street drinking) beside Tạp hóa Vĩnh Hy ---------------- */
+const NH = { x: -52.5, z: 17.6, y: 1.0 };
+const nhau = { phase: 'off', t: 0, cheers: 0, drunk: 0, eye: 0, jailed: false, pledges: 0, A: null, B: null, C: null, sA: null, sB: null, cops: [], car: null, table: null, stools: [], spill: null, lights: [] };
+{
+  const flush = c => new THREE.Color(c).lerp(new THREE.Color(0xd2584a), 0.22).getHex();
+  // low plastic table + things on it (one group so it can be knocked over)
+  const tg = new THREE.Group(); tg.position.set(NH.x, NH.y, NH.z); scene.add(tg); nhau.table = tg;
+  const tp = [];
+  P3(tp, SG.box, 0x2f6fb5, 0, 0.58, 0, 0.74, 0.04, 0.74); P3(tp, SG.box, 0x2a63a3, 0, 0.545, 0, 0.7, 0.04, 0.7);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) P3(tp, SG.box, 0x2a63a3, sx*0.31, 0.27, sz*0.31, 0.05, 0.54, 0.05);
+  for (let i = 0; i < 7; i++){ const a = i*0.9 + 0.3, r = 0.16 + (i % 3)*0.07; P3(tp, SG.cyl, 0x1f7a3a, Math.cos(a)*r, 0.66, Math.sin(a)*r, 0.033, 0.12, 0.033); P3(tp, SG.cyl, 0xd8dcd8, Math.cos(a)*r, 0.722, Math.sin(a)*r, 0.03, 0.006, 0.03); }
+  for (const [x, z] of [[0.24, 0.02], [-0.24, 0.0], [0.02, 0.24], [0.0, -0.24]]){ P3(tp, SG.cyl, 0xe3eef0, x, 0.66, z, 0.04, 0.11, 0.036); P3(tp, SG.cyl, 0xe0a83a, x, 0.645, z, 0.036, 0.075, 0.033); for (let k = 0; k < 3; k++) P3(tp, SG.box, 0xf4fbff, x + R(-.015, .015), 0.69, z + R(-.015, .015), 0.02, 0.02, 0.02, R(0, 1), R(0, 1), 0); }
+  P3(tp, SG.cyl, 0xf3efe6, -0.12, 0.61, 0.12, 0.13, 0.012, 0.13); for (let k = 0; k < 9; k++) P3(tp, SG.box, 0xe9d2a2, -0.12 + R(-.08, .08), 0.625, 0.12 + R(-.08, .08), 0.02, 0.006, 0.09, 0, R(0, 3), 0);
+  P3(tp, SG.cyl, 0xf3efe6, 0.13, 0.61, -0.12, 0.1, 0.012, 0.1); for (let k = 0; k < 18; k++) P3(tp, SG.lo, 0xa86a3a, 0.13 + R(-.06, .06), 0.625, -0.12 + R(-.06, .06), 0.011, 0.008, 0.013);
+  tg.add(coloredMesh(tp));
+  addObs(NH.x - 0.42, NH.x + 0.42, NH.z - 0.42, NH.z + 0.42, 1, 1.7);
+  // red plastic stools
+  const stoolParts = () => { const p = []; P3(p, SG.cyl, 0xd23a2a, 0, 0.4, 0, 0.17, 0.04, 0.17); for (let i = 0; i < 4; i++){ const a = i*Math.PI/2 + Math.PI/4; P3(p, SG.box, 0xc23020, Math.cos(a)*0.13, 0.2, Math.sin(a)*0.13, 0.04, 0.4, 0.04, 0, -a, Math.cos(a)*0.12); } return p; };
+  for (const [dx, dz] of [[0.78, 0], [-0.78, 0], [0, 0.78], [0, -0.78]]){ const s = new THREE.Group(); s.position.set(NH.x + dx, NH.y, NH.z + dz); s.add(coloredMesh(stoolParts())); scene.add(s); nhau.stools.push(s); }
+  // beer crate, ice box, empty cans
+  const gp = [];
+  P3(gp, SG.box, 0xf0c24b, NH.x + 1.05, NH.y + 0.15, NH.z + 0.95, 0.45, 0.3, 0.32); for (let i = 0; i < 12; i++) P3(gp, SG.cyl, 0x2c6a2c, NH.x + 0.88 + (i % 4)*0.11, NH.y + 0.33, NH.z + 0.85 + ((i/4)|0)*0.1, 0.025, 0.08, 0.025);
+  P3(gp, SG.box, 0xf6f4ee, NH.x - 1.05, NH.y + 0.2, NH.z + 0.95, 0.5, 0.4, 0.36); P3(gp, SG.box, 0xd23a2a, NH.x - 1.05, NH.y + 0.41, NH.z + 0.95, 0.52, 0.03, 0.38);
+  for (let i = 0; i < 8; i++) P3(gp, SG.cyl, 0x1f7a3a, NH.x + R(-1.2, 1.2), NH.y + 0.035, NH.z + R(0.9, 1.4), 0.033, 0.12, 0.033, Math.PI/2, R(0, 6), 0);
+  P3(gp, SG.box, 0x3a3a3a, NH.x + 1.5, NH.y + 0.35, NH.z + 1.4, 0.32, 0.7, 0.32);
+  scene.add(coloredMesh(gp));
+  makeSign('NHẬU VỈA HÈ', 1.6, 0.5, NH.x + 1.5, NH.y + 1.0, NH.z + 1.22, Math.PI, { bg: '#f0c24b', fg: '#8e1b12', border: '#8e1b12', font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800, size: .5, sub: 'Bia · khô mực · ốc', subFg: '#5a2a10' });
+  // the mess after a fight (hidden until then)
+  const sp = []; P3(sp, SG.cyl, 0xd8b04a, 0, 0.004, 0, 0.7, 0.004, 0.5); for (let i = 0; i < 10; i++) P3(sp, SG.cyl, 0x1f7a3a, R(-0.8, 0.8), 0.035, R(-0.6, 0.6), 0.033, 0.12, 0.033, Math.PI/2, R(0, 6), 0);
+  for (let i = 0; i < 14; i++) P3(sp, SG.box, 0xdfe9ea, R(-0.6, 0.6), 0.01, R(-0.5, 0.5), 0.05, 0.01, 0.03, 0, R(0, 6), 0);
+  nhau.spill = coloredMesh(sp); nhau.spill.position.set(NH.x, NH.y, NH.z + 0.6); nhau.spill.visible = false; scene.add(nhau.spill);
+  // three drinkers (seated) plus standing doubles for the scuffle
+  const looks = [
+    { sex: 'm', skin: flush(0xc4936a), hair: 0x15110e, hairStyle: 'crew', shirt: 0xf3efe6, pants: 0x2c3e5c, shorts: true, kid: false, old: false },
+    { sex: 'm', skin: flush(0xd8aa82), hair: 0x241a12, hairStyle: 'side', shirt: 0x2f8fb5, pants: 0x34363b, kid: false, old: false },
+    { sex: 'm', skin: flush(0xa06d48), hair: 0xbdb7ad, hairStyle: 'short', shirt: 0x6b5b45, pants: 0x4a5a3a, kid: false, old: true }
+  ];
+  const seat = (lk, dx, dz, ry) => { const g = new THREE.Group(); g.position.set(NH.x + dx, NH.y, NH.z + dz); scene.add(g); return person(0, 0, 0, Object.assign({ parent: g, anim: true, seated: true, ry }, lk)); };
+  nhau.A = seat(looks[0], 0.78, 0, Math.PI/2); nhau.B = seat(looks[1], -0.78, 0, -Math.PI/2); nhau.C = seat(looks[2], 0, 0.78, 0);
+  const standDouble = lk => { const g = new THREE.Group(); scene.add(g); g.visible = false; g.userData.rig = person(0, 0, 0, Object.assign({ parent: g, anim: true }, lk)).userData.rig; return g; };
+  nhau.sA = standDouble(looks[0]); nhau.sB = standDouble(looks[1]);
+}
+
+/* ---------------- Công an xã Vĩnh Hải: police post with a holding cell ---------------- */
+const STATION = { x0: 83, x1: 95, z0: 19, z1: 28, floor: 1.15, cellX: 90 };
+{
+  const S = STATION, wallM = L(0xf2c94c), H = 3.4, top = S.floor + H;
+  texBox(81, 97, 0.7, 1.02, 14, 19, paving, 3); addWalk(81, 97, 14, 19, 1.02);
+  texBox(S.x0, S.x1, 0.7, S.floor, S.z0, S.z1, paving, 2, 0xe8e2d4); addWalk(S.x0, S.x1, S.z0, S.z1, S.floor);
+  box(S.x1 - S.x0, H, 0.2, wallM, (S.x0 + S.x1)/2, S.floor + H/2, S.z1 - 0.1); addObs(S.x0, S.x1, S.z1 - 0.2, S.z1, 1, top);
+  for (const x of [S.x0 + 0.1, S.x1 - 0.1]){ box(0.2, H, S.z1 - S.z0, wallM, x, S.floor + H/2, (S.z0 + S.z1)/2); addObs(x - 0.1, x + 0.1, S.z0, S.z1, 1, top); }
+  // front wall of the office with a doorway (x 85-87), lintels over door and cell bars
+  for (const [a, b] of [[S.x0, 85], [87, S.cellX]]){ box(b - a, H, 0.2, wallM, (a + b)/2, S.floor + H/2, S.z0 + 0.1); addObs(a, b, S.z0, S.z0 + 0.2, 1, top); }
+  box(2, H - 2.3, 0.2, wallM, 86, S.floor + 2.3 + (H - 2.3)/2, S.z0 + 0.1);
+  box(S.x1 - S.cellX, 0.9, 0.2, wallM, (S.x1 + S.cellX)/2, top - 0.45, S.z0 + 0.1);
+  box(S.x1 - S.x0 + 0.6, 0.18, S.z1 - S.z0 + 0.6, L(0xe9e4d8), (S.x0 + S.x1)/2, top + 0.09, (S.z0 + S.z1)/2);
+  hipRoof(S.x1 - S.x0 + 1, S.z1 - S.z0 + 1, 2.2, mat.roof, (S.x0 + S.x1)/2, top + 0.18, (S.z0 + S.z1)/2);
+  for (let x = 83.6; x < 90; x += 2.2) if (x < 84.6 || x > 87.4){ box(1.0, 1.0, 0.06, L(0x2f4f6a), x + 0.5, S.floor + 1.6, S.z0 - 0.02); }
+  // bars: front of the cell and the partition inside
+  const bars = [];
+  for (let x = S.cellX + 0.1; x < S.x1 - 0.1; x += 0.16) P3(bars, SG.cyl, 0x50565c, x, S.floor + 1.12, S.z0 + 0.1, 0.022, 2.24, 0.022);
+  for (let z = S.z0 + 0.2; z < S.z1 - 0.1; z += 0.16) P3(bars, SG.cyl, 0x50565c, S.cellX, S.floor + 1.12, z, 0.022, 2.24, 0.022);
+  for (const y of [0.15, 1.1, 2.2]){ P3(bars, SG.box, 0x3e4348, (S.cellX + S.x1)/2, S.floor + y, S.z0 + 0.1, S.x1 - S.cellX, 0.05, 0.05); P3(bars, SG.box, 0x3e4348, S.cellX, S.floor + y, (S.z0 + S.z1)/2, 0.05, 0.05, S.z1 - S.z0); }
+  P3(bars, SG.box, 0x3e4348, S.cellX, S.floor + 1.12, 22.6, 0.08, 2.24, 0.06); P3(bars, SG.box, 0xc8a040, S.cellX - 0.06, S.floor + 1.05, 22.4, 0.06, 0.16, 0.1);
+  scene.add(coloredMesh(bars));
+  addObs(S.cellX, S.x1, S.z0, S.z0 + 0.22, 1, top); addObs(S.cellX - 0.1, S.cellX + 0.1, S.z0, S.z1, 1, top);
+  // inside: desk, chairs, plank bed and a little table in the cell
+  const f = [];
+  P3(f, SG.box, 0x6b4a2e, 86.6, S.floor + 0.38, 25.6, 2.0, 0.06, 0.8); for (const sx of [-1, 1]) P3(f, SG.box, 0x5a3c24, 86.6 + sx*0.95, S.floor + 0.19, 25.6, 0.06, 0.38, 0.75);
+  P3(f, SG.box, 0xf6f4ee, 86.3, S.floor + 0.42, 25.5, 0.3, 0.01, 0.22); P3(f, SG.box, 0x26231f, 87.2, S.floor + 0.47, 25.7, 0.32, 0.12, 0.24);
+  P3(f, SG.box, 0x8a6a48, 86.6, S.floor + 0.24, 26.5, 0.45, 0.05, 0.45);
+  P3(f, SG.box, 0x8a6a48, 92.7, S.floor + 0.4, 27.1, 3.6, 0.08, 1.0); for (const x of [91.1, 94.3]) P3(f, SG.box, 0x6b4a2e, x, S.floor + 0.2, 27.1, 0.1, 0.4, 0.9);
+  P3(f, SG.box, 0x8a6a48, 93.9, S.floor + 0.36, 24.2, 0.7, 0.05, 0.55); for (const sx of [-1, 1]) for (const sz of [-1, 1]) P3(f, SG.box, 0x6b4a2e, 93.9 + sx*0.3, S.floor + 0.18, 24.2 + sz*0.22, 0.04, 0.36, 0.04);
+  P3(f, SG.box, 0xffffff, 93.9, S.floor + 0.39, 24.2, 0.3, 0.006, 0.4, 0, 0.15, 0); P3(f, SG.cyl, 0x1f4fa8, 93.75, S.floor + 0.395, 24.15, 0.006, 0.14, 0.006, Math.PI/2, 0.6, 0);
+  P3(f, SG.box, 0x8a6a48, 93.9, S.floor + 0.22, 23.45, 0.4, 0.04, 0.36);
+  scene.add(coloredMesh(f));
+  addObs(85.6, 87.6, 25.2, 26.0, 1, 2); addObs(91, 94.4, 26.6, 27.6, 1, 1.6); addObs(93.55, 94.25, 23.95, 24.45, 1, 1.6);
+  makeSign('CÔNG AN XÃ VĨNH HẢI', 5.6, 0.85, 86.6, top - 0.5, S.z0 - 0.02, Math.PI, { bg: '#b3261e', fg: '#f6d55c', border: '#f6d55c', font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800, size: .5, sub: 'Huyện Ninh Hải · Tỉnh Ninh Thuận', subFg: '#ffffff' });
+  makeSign('PHÒNG TẠM GIỮ', 2.8, 0.5, 92.5, top - 0.45, S.z0 - 0.02, Math.PI, { bg: '#26231f', fg: '#f6f1e4', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 700, size: .55 });
+  makeSign('VÌ NHÂN DÂN PHỤC VỤ', 3.6, 0.55, 86.6, S.floor + 2.5, S.z1 - 0.21, Math.PI, { bg: '#b3261e', fg: '#f6d55c', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800, size: .55 });
+  makeSign('Nội quy phòng tạm giữ: giữ trật tự · không la hét · viết cam kết tại bàn', 3.2, 0.5, 92.7, S.floor + 2.1, S.z1 - 0.21, Math.PI, { bg: '#f6f4ee', fg: '#26231f', border: '#26231f', font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 600, size: .3 });
+  // flag pole
+  cyl(0.05, 0.06, 6.5, mat.metal, 82, 1.02 + 3.25, 15.2, 8); obsAround(82, 15.2, 0.12, 1, 7);
+  makeSign('★', 1.5, 1.0, 82.8, 6.75, 15.2, Math.PI, { bg: '#da251d', fg: '#ffde00', border: false, size: .9, font: "system-ui,sans-serif" });
+  // officers on duty
+  person(86.6, S.floor, 26.5, { seated: true, sex: 'm', shirt: 0x7a8a45, pants: 0x55603a, cap: 0x55603a, kid: false, old: false });
+  const cop = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, 1.02, z); g.rotation.y = ry; scene.add(g); g.userData.rig = person(0, 0, 0, { parent: g, anim: true, sex: 'm', shirt: 0x7a8a45, pants: 0x55603a, cap: 0x55603a, kid: false, old: false, hairStyle: 'crew' }).userData.rig; return g; };
+  nhau.cops = [cop(84.4, 17.6, 0), cop(88.6, 17.2, -0.3)];
+  nhau.copHome = nhau.cops.map(g => [g.position.x, g.position.y, g.position.z, g.rotation.y]);
+  // police pickup with a light bar (front is -z)
+  const car = new THREE.Group(), cp = [];
+  P3(cp, SG.box, 0xf6f6f2, 0, 0.75, 0, 1.9, 0.75, 4.6); P3(cp, SG.box, 0xf6f6f2, 0, 1.5, -0.3, 1.82, 0.76, 2.3);
+  P3(cp, SG.box, 0x1f2a34, 0, 1.56, -0.3, 1.84, 0.44, 2.1); P3(cp, SG.box, 0x1f2a34, 0, 1.52, -1.46, 1.66, 0.5, 0.06, -0.35, 0, 0);
+  P3(cp, SG.box, 0x1f4fa8, 0, 0.86, 0, 1.92, 0.16, 4.4); P3(cp, SG.box, 0xc62828, 0, 0.73, 0, 1.92, 0.05, 4.4);
+  P3(cp, SG.box, 0x2a2a2a, 0, 0.42, -2.3, 1.86, 0.18, 0.08); P3(cp, SG.box, 0x2a2a2a, 0, 0.42, 2.3, 1.86, 0.18, 0.08);
+  for (const sx of [-0.7, 0.7]){ P3(cp, SG.box, 0xfff6d0, sx, 0.88, -2.31, 0.32, 0.12, 0.02); P3(cp, SG.box, 0xd02020, sx, 0.88, 2.31, 0.28, 0.12, 0.02); }
+  for (const sx of [-0.88, 0.88]) for (const z of [-1.45, 1.45]){ P3(cp, SG.cyl, 0x1c1b1a, sx, 0.34, z, 0.34, 0.24, 0.34, 0, 0, Math.PI/2); P3(cp, SG.cyl, 0xb8bcc0, sx*1.02, 0.34, z, 0.18, 0.24, 0.18, 0, 0, Math.PI/2); }
+  P3(cp, SG.box, 0x26231f, 0, 1.92, -0.3, 1.3, 0.08, 0.32);
+  car.add(coloredMesh(cp));
+  const lr = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.14, 0.3), new THREE.MeshBasicMaterial({ color: 0x5a1010 })), lb = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.14, 0.3), new THREE.MeshBasicMaterial({ color: 0x10205a }));
+  lr.position.set(-0.32, 2.03, -0.3); lb.position.set(0.32, 2.03, -0.3); car.add(lr, lb); nhau.lights = [lr, lb];
+  for (const [x, ry] of [[0.962, Math.PI/2], [-0.962, -Math.PI/2]]) makeSign('CÔNG AN', 1.9, 0.34, x, 1.12, 0.5, ry, { parent: car, bg: '#f6f6f2', fg: '#1f4fa8', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800, size: .7 });
+  makeSign('CÔNG AN', 1.3, 0.3, 0, 1.15, 2.31, 0, { parent: car, bg: '#f6f6f2', fg: '#1f4fa8', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800, size: .7 });
+  makeSign('113', 0.7, 0.26, 0, 0.6, -2.35, Math.PI, { parent: car, bg: '#1f4fa8', fg: '#ffffff', border: false, font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800, size: .7 });
+  car.position.set(91.5, 1.02, 16.2); car.rotation.y = Math.PI/2; scene.add(car); nhau.car = car; nhau.carHome = [91.5, 1.02, 16.2, Math.PI/2];
+  addObs(89.2, 93.8, 15.2, 17.2, 1, 2.2); nhau.carObs = obst[obst.length - 1];
+}
+
 
 /* ---------------- coral reef & fish ---------------- */
 const REEF = new THREE.Vector3(-90, 0, -68);
@@ -2376,6 +2489,7 @@ function rideUI(kind){
   $('ridebar').hidden = !kind; $('prompt').hidden = true;
   $('glassBtn').hidden = kind !== 'boat'; $('rideNext').hidden = true; $('rideLand').hidden = true; $('rideDive').hidden = true; $('rideEnd').hidden = false;
   $('rideEnd').textContent = kind === 'boat' ? 'Về bến' : 'Kết thúc';
+  for (const id of ['nhauDzo', 'nhauMoi', 'nhauQuay']) $(id).hidden = true;
 }
 function startRide(legs = FULL, isReturn = false){
   initAudio(); if (!isReturn) st.trips++;
@@ -2425,8 +2539,146 @@ function setGlass(on){
   else if (mode === 'glass') { mode = 'boat'; P.pitch = -0.12; }
 }
 $('glassBtn').onclick = () => { if (mode === 'boat' || mode === 'glass') setGlass(!ride.glass); };
-$('rideEnd').onclick = () => { if (mode === 'car') return endCar(); if (mode === 'boat' || mode === 'glass') endRide(); else if (mode === 'jet' || mode === 'banana') endWater(false); };
-$('ridePhoto').onclick = () => { if (mode === 'car') return takePhoto('Xe điện lên suối Lồ Ồ'); if (mode === 'dive') return takePhoto('Lặn ngắm san hô'); if (mode === 'jet') return takePhoto('Mô tô nước trên vịnh'); if (mode === 'banana') return takePhoto('Phao chuối Bến Amanoi'); if (mode !== 'boat' && mode !== 'glass') return; const s = ride.stopT >= 0 && ride.legs[ride.leg].stop; takePhoto(ride.glass ? 'San hô qua đáy kính' : (s && s.look ? s.name : 'Trên tàu giữa vịnh')); };
+$('rideEnd').onclick = () => { if (mode === 'nhau') return leaveNhau(); if (mode === 'car') return endCar(); if (mode === 'boat' || mode === 'glass') endRide(); else if (mode === 'jet' || mode === 'banana') endWater(false); };
+$('ridePhoto').onclick = () => { if (mode === 'nhau') return takePhoto(); if (mode === 'car') return takePhoto('Xe điện lên suối Lồ Ồ'); if (mode === 'dive') return takePhoto('Lặn ngắm san hô'); if (mode === 'jet') return takePhoto('Mô tô nước trên vịnh'); if (mode === 'banana') return takePhoto('Phao chuối Bến Amanoi'); if (mode !== 'boat' && mode !== 'glass') return; const s = ride.stopT >= 0 && ride.legs[ride.leg].stop; takePhoto(ride.glass ? 'San hô qua đáy kính' : (s && s.look ? s.name : 'Trên tàu giữa vịnh')); };
+
+/* ---------------- nhậu vỉa hè · quậy phá · công an · tạm giữ ---------------- */
+const NHAU_BTNS = ['nhauDzo', 'nhauMoi', 'nhauQuay'];
+const NHAU_SEAT = { x: NH.x, z: NH.z - 0.78 };
+function nhauBar(show){
+  $('ridebar').hidden = !show; $('prompt').hidden = true;
+  for (const id of ['glassBtn', 'rideNext', 'rideLand', 'rideDive']) $(id).hidden = true;
+  for (const id of NHAU_BTNS) $(id).hidden = !show || nhau.phase !== 'sit';
+  $('rideEnd').hidden = !show || nhau.phase !== 'sit'; if (show) $('ridePhoto').hidden = false;
+  $('rideEnd').textContent = 'Tính tiền & đứng dậy';
+}
+function siren(sec){ for (let i = 0; i < sec*2.2; i++) setTimeout(() => tone(i % 2 ? 960 : 700, 0.42, 'square', 0.028), i*450); }
+function smash(){ noiseHit(0.18, 'lowpass', 320, 0.35); noiseHit(0.35, 'highpass', 2600, 0.18, null, 0.08); tone(3400, 0.25, 'triangle', 0.04); setTimeout(() => tone(2700, 0.3, 'triangle', 0.035), 120); }
+function startNhau(){
+  if (nhau.jailed) return;
+  openChoice('Nhậu vỉa hè', 'Nhóm anh em làng chài mời bạn ngồi chung: bia lạnh, khô mực nướng, đậu phộng rang.', [
+    { label: 'Ngồi nhậu cùng (bia + mồi)', right: vnd(120000) },
+    { label: 'Thôi, cảm ơn, đi tiếp', right: '' }
+  ], i => {
+    if (i !== 0) return toast('Nhóm nhậu', '"Ừ, lúc nào rảnh ghé làm vài lon nha!"', 2600);
+    initAudio(); st.spent += 120000; st.dishes++; st.tried.add('Nhậu vỉa hè');
+    fadeTo(() => {
+      Object.assign(nhau, { phase: 'sit', t: 0, cheers: 0 });
+      P.x = NHAU_SEAT.x; P.z = NHAU_SEAT.z; P.feet = 1; P.yaw = Math.PI; P.pitch = -0.3; mode = 'nhau'; nhau.eye = -0.62;
+      $('rideWhere').textContent = 'Đang nhậu với anh em làng chài · Space: dzô'; nhauBar(true);
+      toast('Một, hai, ba, dzô!', 'Anh Tư rót bia, đẩy dĩa khô mực về phía bạn.', 3200);
+    });
+  });
+}
+function nhauCheers(){
+  if (mode !== 'nhau' || nhau.phase !== 'sit') return;
+  nhau.cheers++; nhau.drunk = Math.min(1, nhau.drunk + 0.17);
+  for (const p of [nhau.A, nhau.B, nhau.C]){ const r = p.userData.rig; r.drink = 2.6; r.dk = 8 + Math.random()*6; }
+  sfx.clink(); setTimeout(() => sfx.clink(), 160); tone(520, 0.3, 'triangle', 0.04, 780);
+  const lines = ['"Dzô! Trăm phần trăm!"', '"Năm mươi phần trăm thôi anh ơi!"', '"Uống đi, bia Ninh Thuận lạnh lắm!"', '"Ê, tới lượt chú Ba nói nè!"', '"Cạn ly vì Vĩnh Hy!"'];
+  toast('Dzô!', lines[nhau.cheers % lines.length] + (nhau.drunk > 0.5 ? ' · Bạn bắt đầu thấy chếnh choáng…' : ''), 2600);
+  P.pitch = -0.1;
+}
+function nhauMoi(){
+  if (mode !== 'nhau' || nhau.phase !== 'sit') return;
+  st.spent += 60000; sfx.plate(); puff(NH.x + 0.1, NH.y + 0.75, NH.z, 5, { size: 0.18, op: 0.4 });
+  toast('Khô mực nướng', vnd(60000) + ' · mực một nắng nướng than, xé sợi, chấm tương ớt.', 3000);
+}
+function leaveNhau(){
+  if (mode !== 'nhau' || nhau.phase !== 'sit') return;
+  fadeTo(() => { nhau.phase = 'off'; nhau.eye = 0; eyeOff = 0; nhauBar(false); tp(NH.x, NH.z - 1.6, 1, Math.PI); toast('Tạm biệt nhóm nhậu', '"Mai ghé nữa nha!"', 2400); });
+}
+const faceTo = (g, x, z) => { g.rotation.y = Math.atan2(-(x - g.position.x), -(z - g.position.z)); };
+function nhauQuay(){
+  if (mode !== 'nhau' || nhau.phase !== 'sit') return;
+  nhau.phase = 'fight'; nhau.t = 0; nhauBar(true);
+  $('rideWhere').textContent = 'Bạn đang gây rối trật tự nơi công cộng!';
+  nhau.A.parent.visible = false; nhau.B.parent.visible = false;
+  nhau.sA.position.set(NH.x + 0.95, NH.y, NH.z - 0.55); nhau.sB.position.set(NH.x - 0.95, NH.y, NH.z - 0.5);
+  for (const g of [nhau.sA, nhau.sB]){ g.visible = true; faceTo(g, P.x, P.z); }
+  nhau.table.rotation.set(1.35, 0, 0.2); nhau.table.position.set(NH.x + 0.1, NH.y + 0.28, NH.z + 0.75); nhau.spill.visible = true;
+  nhau.stools.forEach((s, i) => { s.rotation.set(i % 2 ? 1.5 : 0, i*1.3, i % 2 ? 0 : 1.5); s.position.y = NH.y + 0.17; });
+  smash(); puff(NH.x, NH.y + 0.6, NH.z + 0.3, 10, { size: 0.35, spread: 0.6, op: 0.5 });
+  toast('Bạn đập bàn, hất đổ cả mâm bia!', '"Ê! Làm cái gì vậy?!" · Hai người bạn nhậu đứng bật dậy xô xát với bạn.', 4200);
+  nhau.eye = 0; P.pitch = 0;
+}
+function arrestToStation(){
+  fadeTo(() => {
+    nhau.phase = 'off'; nhau.jailed = true; nhau.drunk = 0; nhau.eye = 0; eyeOff = 0; engineOn(false); nhauBar(false);
+    nhau.A.parent.visible = true; nhau.B.parent.visible = true; nhau.sA.visible = false; nhau.sB.visible = false;
+    nhau.table.rotation.set(0, 0, 0); nhau.table.position.set(NH.x, NH.y, NH.z);
+    nhau.stools.forEach((s, i) => { s.rotation.set(0, 0, 0); s.position.y = NH.y; });
+    nhau.car.position.set(...nhau.carHome.slice(0, 3)); nhau.car.rotation.set(0, nhau.carHome[3], 0);
+    nhau.cops[0].position.set(STATION.cellX - 1.3, STATION.floor, 21.2); nhau.cops[0].rotation.y = -Math.PI/2;
+    nhau.cops[1].position.set(...nhau.copHome[1].slice(0, 3)); nhau.cops[1].rotation.y = nhau.copHome[1][3];
+    tp(92.2, 21.4, STATION.floor, 0);
+    toast('Tạm giữ tại Công an xã Vĩnh Hải', 'Bạn bị đưa về đồn vì gây rối trật tự công cộng. Đến bàn nhỏ trong phòng để viết bản cam kết.', 7500);
+  });
+}
+function signPledge(){
+  if (!nhau.jailed) return toast('Phòng tạm giữ', 'Phòng đang trống. Mong là không ai phải vào đây!', 2600);
+  openChoice('Bản cam kết', 'Tôi xin cam kết không tái phạm hành vi gây rối trật tự công cộng, ứng xử văn minh khi du lịch Vĩnh Hy.', [
+    { label: 'Ký cam kết & xin được về', right: '✍' },
+    { label: 'Ngồi suy nghĩ thêm', right: '' }
+  ], i => {
+    if (i !== 0) return toast('Phòng tạm giữ', 'Cán bộ trực ban: "Khi nào nghĩ thông thì viết cam kết nhé."', 3000);
+    sfx.chime();
+    fadeTo(() => {
+      nhau.jailed = false; nhau.pledges++;
+      nhau.cops[0].position.set(...nhau.copHome[0].slice(0, 3)); nhau.cops[0].rotation.y = nhau.copHome[0][3];
+      tp(86, 16.4, 1.02, 0);
+      toast('Đã ký cam kết', 'Cán bộ: "Lần sau vui chơi văn minh nhé. Chúc bạn tham quan Vĩnh Hy vui vẻ!"', 5000);
+    });
+  });
+}
+function updateNhau(dt){
+  const near = Math.hypot(camera.position.x - NH.x, camera.position.z - NH.z) < 70, nearS = Math.hypot(camera.position.x - 89, camera.position.z - 22) < 70;
+  if (near) for (const p of [nhau.A, nhau.B, nhau.C]) if (p.parent.visible) animIdle(p.userData.rig, dt);
+  if (nearS || nhau.phase === 'police') for (const g of nhau.cops) if (!g.userData.walking) animIdle(g.userData.rig, dt);
+  if (eyeOff !== nhau.eye && mode === 'nhau') eyeOff += (nhau.eye - eyeOff)*Math.min(1, dt*4);
+  if (nhau.drunk > 0.3 && mode === 'nhau'){ const tt = performance.now()/1000; P.yaw += Math.sin(tt*0.8)*0.0016*nhau.drunk; P.pitch += Math.sin(tt*1.1)*0.0012*nhau.drunk; }
+  const flash = Math.floor(performance.now()/180) % 2;
+  nhau.lights[0].material.color.setHex(nhau.phase === 'fight' || nhau.phase === 'police' ? (flash ? 0xff2020 : 0x5a1010) : 0x5a1010);
+  nhau.lights[1].material.color.setHex(nhau.phase === 'fight' || nhau.phase === 'police' ? (flash ? 0x10205a : 0x3a6aff) : 0x10205a);
+  if (nhau.phase === 'fight' || nhau.phase === 'police'){
+    nhau.t += dt; const t = nhau.t;
+    if (nhau.phase === 'fight'){
+      [nhau.sA, nhau.sB].forEach((g, k) => {
+        const r = g.userData.rig, s = Math.sin(t*9 + k*1.7);
+        r.arms[1].p.rotation.set(1.15 + s*0.4, 0, 0.15); r.arms[1].e.rotation.x = 0.9 - s*0.7; r.arms[0].p.rotation.set(1.05 - s*0.4, 0, -0.15); r.arms[0].e.rotation.x = 1.2 + s*0.5;
+        r.pelvis.rotation.y = s*0.25; r.pelvis.position.y = -0.05; r.legs[0].p.rotation.x = 0.3; r.legs[0].k.rotation.x = -0.45; r.legs[1].p.rotation.x = -0.2;
+        r.headPivot.rotation.x = 0.1 + s*0.08;
+      });
+      P.yaw += Math.sin(t*23)*0.006; P.pitch += Math.sin(t*19)*0.004;
+      if (Math.random() < dt*2.2){ noiseHit(0.12, 'lowpass', 280, 0.25); puff(NH.x + R(-1, 1), NH.y + 1.2, NH.z - 0.5 + R(-0.4, 0.4), 2, { size: 0.3, spread: 0.4, op: 0.35 }); }
+      if (t > 2.4 && !nhau.sirenOn){ nhau.sirenOn = true; siren(9); toast('🚨 Có người gọi 113!', 'Tiếng còi hụ vang từ phía cầu Vĩnh Hy…', 3200); nhau.car.position.set(30, 1.0, 11.6); nhau.car.rotation.set(0, Math.PI/2, 0); engineOn(true, 60); }
+      if (nhau.sirenOn){ const k = Math.min(1, (t - 2.4)/3.6), e = 1 - (1 - k)**3; nhau.car.position.x = 30 + (NH.x + 2.2 - 30)*e; }
+      if (t > 6.0){
+        nhau.phase = 'police'; nhau.t = 0; engineOn(false);
+        $('rideWhere').textContent = 'Công an xã Vĩnh Hải đã tới';
+        toast('CÔNG AN ĐÂY!', '"Tất cả đứng yên! Ai gây rối ở đây?" · Hai người bạn nhậu giơ tay chỉ về phía bạn.', 4200);
+        [nhau.sA, nhau.sB].forEach(g => { const r = g.userData.rig; r.pelvis.rotation.y = 0; r.pelvis.position.y = 0; for (const l of r.legs){ l.p.rotation.x = 0; l.k.rotation.x = 0; } r.arms[0].p.rotation.set(-0.2, 0, -2.7); r.arms[1].p.rotation.set(-0.2, 0, 2.7); r.arms[0].e.rotation.x = 0.4; r.arms[1].e.rotation.x = 0.4; });
+        nhau.cops[0].position.set(NH.x + 1.6, NH.y, 13.4); nhau.cops[1].position.set(NH.x + 3.0, NH.y, 13.4);
+        nhau.copGoal = [[P.x + 0.75, P.z - 0.9], [P.x - 0.75, P.z - 0.95]];
+        for (const g of nhau.cops) g.userData.walking = true;
+      }
+    } else {
+      const look = Math.atan2(-(nhau.cops[0].position.x - P.x), -(nhau.cops[0].position.z - P.z)); let d = look - P.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); P.yaw += d*Math.min(1, dt*2.5); P.pitch += (-0.1 - P.pitch)*Math.min(1, dt*2);
+      nhau.cops.forEach((g, i) => {
+        const [gx, gz] = nhau.copGoal[i], dx = gx - g.position.x, dz = gz - g.position.z, dd = Math.hypot(dx, dz), r = g.userData.rig;
+        if (dd > 0.15){ const s = Math.min(dd, 1.6*dt); g.position.x += dx/dd*s; g.position.z += dz/dd*s; faceTo(g, gx, gz); animWalk(r, dt, 1.6); }
+        else { g.userData.walking = false; faceTo(g, P.x, P.z); }
+      });
+      if (nhau.t > 4.2 && nhau.phase === 'police'){ nhau.phase = 'arrest'; nhau.sirenOn = false; for (const g of nhau.cops) g.userData.walking = false; toast('Bạn bị đưa về đồn', '"Mời anh/chị về trụ sở làm việc."', 3000); setTimeout(arrestToStation, 1400); }
+    }
+  }
+}
+$('nhauDzo').onclick = nhauCheers; $('nhauMoi').onclick = nhauMoi; $('nhauQuay').onclick = nhauQuay;
+addEventListener('keydown', e => { if (mode === 'nhau' && e.code === 'Space' && !menuOpen){ e.preventDefault(); nhauCheers(); } });
+acts.push(
+  { x: NH.x, z: NH.z - 1.7, y: 1, r: 2.0, label: () => nhau.jailed ? 'Nhóm nhậu' : 'Nhậu cùng nhóm bạn vỉa hè 🍻', fn: startNhau },
+  { x: 93.9, z: 23.6, y: STATION.floor, r: 1.6, label: () => nhau.jailed ? 'Viết bản cam kết không quậy phá' : 'Bàn viết cam kết (phòng trống)', fn: signPledge }
+);
 const dive = { x: 0, y: 0, z: 0, t: 0, b: 0 };
 function startDive(){
   fadeTo(() => {
@@ -2646,7 +2898,7 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'KeyE' || e.code === 'Enter') doAct();
   if (e.code === 'KeyG' && (mode === 'boat' || mode === 'glass')) setGlass(!ride.glass);
-  if (e.code === 'KeyP') { if (['boat', 'glass', 'jet', 'banana', 'dive', 'car'].includes(mode)) $('ridePhoto').click(); else if (mode === 'walk') takePhoto(); }
+  if (e.code === 'KeyP') { if (['boat', 'glass', 'jet', 'banana', 'dive', 'car', 'nhau'].includes(mode)) $('ridePhoto').click(); else if (mode === 'walk') takePhoto(); }
   if (e.code === 'Escape') $('lightbox').hidden = true;
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -2673,7 +2925,7 @@ const joy = { x: 0, y: 0, id: null };
 let curAct = null;
 function doAct(){ if (mode === 'walk' && curAct && !menuOpen){ initAudio(); curAct.fn(curAct); } }
 $('actBtn').onclick = doAct;
-$('camBtn').onclick = () => { if (mode === 'walk') takePhoto(); else if (['boat', 'glass', 'jet', 'banana', 'dive', 'car'].includes(mode)) $('ridePhoto').click(); };
+$('camBtn').onclick = () => { if (mode === 'walk') takePhoto(); else if (['boat', 'glass', 'jet', 'banana', 'dive', 'car', 'nhau'].includes(mode)) $('ridePhoto').click(); };
 if (isTouch){ $('joy').hidden = false; $('help').hidden = true; $('camBtn').hidden = false; }
 
 /* ---------------- player ---------------- */
@@ -2791,6 +3043,7 @@ function zoneName(){
   if (x > 140) return 'Cổng Amanoi';
   if (x > 35 && x < 64 && z < 0) return 'Resort Vĩnh Hy';
   if (x > 62 && x < 74 && z > 4 && z < 16) return 'Cầu Vĩnh Hy';
+  if (x > 80 && x < 98 && z > 14 && z < 29) return 'Công an xã Vĩnh Hải';
   if (x > 62) return 'Đường ven vịnh';
   return 'Làng chài Vĩnh Hy';
 }
@@ -2811,6 +3064,7 @@ const zoneMsg = {
   'Amanoi': ['Amanoi', 'Khu nghỉ dưỡng trên mũi núi: sảnh gỗ, hồ bơi vô cực đá đen, hồ sen.'],
   'Resort Vĩnh Hy': ['Resort Vĩnh Hy', 'Bungalow quanh hồ bơi lớn, nhà hàng và café sát mép vịnh, cách cầu tàu vài chục mét.'],
   'Cầu Vĩnh Hy': ['Cầu Vĩnh Hy', 'Cây cầu bắc qua cửa sông đổ ra vịnh. Bên kia cầu là đường ĐT702 đi Amanoi.'],
+  'Công an xã Vĩnh Hải': ['Công an xã Vĩnh Hải', 'Trụ sở công an xã, có phòng tạm giữ người gây rối trật tự công cộng.'],
   'Đường ven vịnh': ['Đường ven vịnh', 'Bên trái là vườn nho, bên phải là vịnh và thuyền thúng.']
 };
 const seenZones = new Set(['Làng chài Vĩnh Hy']);
@@ -2833,7 +3087,7 @@ let last = performance.now(), T = 0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last)/1000); last = now; T += dt;
-  updatePlayer(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
+  updatePlayer(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateNhau(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
   sky.position.copy(camera.position);
   const fx = camera.position.x, fz = camera.position.z, fy = Math.max(0, camera.position.y - 2);
   sun.target.position.set(fx, fy, fz); sun.position.set(fx + sunDir.x*200, fy + sunDir.y*200, fz + sunDir.z*200);
