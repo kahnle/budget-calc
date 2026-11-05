@@ -815,6 +815,7 @@ function updateCrowd(dt){
   }
 }
 function walker(pts, y, o = {}){
+  if (y === 1){ const out = [pts[0]]; for (let i = 1; i < pts.length; i++){ const a = pts[i - 1], b = pts[i]; if (a[1] < 6 && b[1] < 6 && Math.min(a[0], b[0]) < -3.4 && Math.max(a[0], b[0]) > 9.4) (a[0] < b[0] ? [[-3.4, 0.85], [9.4, 0.85]] : [[9.4, 0.85], [-3.4, 0.85]]).forEach(q => out.push(q)); out.push(b); } pts = out; }
   const [x, z] = pts[0], y0 = typeof y === 'function' ? y(x, z) : y;
   const g = person(x, y0, z, Object.assign({ walk: true }, o));
   const c = crowd[crowd.length - 1]; Object.assign(c, { pts, y, i: 1, dir: 1, wait: Math.random()*2, speed: c.rig.kid ? 1.0 : 1.05 + Math.random()*0.3 });
@@ -1233,11 +1234,8 @@ function table(x, y, z, top = 0x8a6a48){
     box(0.5, 0.45, 3.2, mat.timber, 12.9, 1.22, 19.5); addObs(12.6, 13.2, 17.9, 21.1, 1, 1.5);
     person(12.9, 1, 19, { seated: true, shirt: 0xd9563a, ry: -Math.PI/2 }); person(12.9, 1, 20.3, { seated: true, shirt: 0xf0c24b, ry: -Math.PI/2 });
   }
-  // ticket check kiosk at the pier entrance
-  box(2.6, 2.6, 2.2, mat.blue, 7, 2.3, 3.2); box(3.2, 0.15, 2.8, mat.white, 7, 3.7, 3.2); addObs(5.7, 8.3, 2.1, 4.3, 1, 3.8);
-  box(1.4, 0.8, 0.05, mat.dark, 7, 2.6, 2.08);
-  makeSign('SOÁT VÉ LÊN TÀU', 3, 0.6, 7, 4.12, 1.81, Math.PI, { bg: '#f6f1e4', fg: '#1d4f7a', border: '#1d4f7a', sub: 'Mua vé tại nhà bán vé bên kia đường' });
-  person(7, 1, 1.5, { shirt: 0x14467e, cap: 0xf3efe6, ry: Math.PI });
+  // ticket checker standing by the pier gate
+  person(1.45, 1, -2.2, { shirt: 0x14467e, cap: 0xf3efe6, ry: Math.PI, sex: 'm', kid: false });
   // nets
   const netM = L(0x3f7f6a);
   for (let i = 0; i < 4; i++){ const n = new THREE.Mesh(new THREE.SphereGeometry(R(.6, .9), 8, 6), i%2 ? netM : L(0x2e5f8f)); n.scale.y = 0.4; n.position.set(-17 + i*1.1, 1.15, 3 + R(-.4, .4)); n.receiveShadow = true; scene.add(n); }
@@ -1254,6 +1252,113 @@ for (let z = -44; z <= -4; z += 8){ for (const x of [-1.85, 1.85]) cyl(0.1, 0.12
 makeSign('CẦU TÀU VĨNH HY', 3.6, 0.7, 0, 3.4, 0.4, Math.PI, { sub: 'Bến tàu đáy kính' });
 cyl(0.08, 0.08, 3, mat.timberDark, -1.9, 2.5, 0.4, 6); cyl(0.08, 0.08, 3, mat.timberDark, 1.9, 2.5, 0.4, 6);
 person(-0.8, 1, -47.5, { shirt: 0xf3efe6, cap: 0x2f8fb5, ry: 2.6 }); person(5.6, 1, -49.4, { shirt: 0xd9563a, ry: 0.4 });
+
+/* ---------------- Đài phun nước thiên nga: in front of the pier entrance ---------------- */
+const FT = { x: 0, z: 3.55, y: 1.0, R: 2.1, water: 0.42 };
+const fountain = { swans: [], hearts: [], drops: null, dv: null, curtains: [], ripples: [], a: 0, t: 0 };
+{
+  const stone = 0xe6dfd0, marble = 0xf3f0e8, g = new THREE.Group(); g.position.set(FT.x, FT.y, FT.z); scene.add(g);
+  const lathe = (pts, seg = 40) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+  const p = [];
+  p.push([lathe([[FT.R - 0.22, 0.1], [FT.R - 0.22, 0.56], [FT.R + 0.06, 0.6], [FT.R + 0.1, 0.52], [FT.R + 0.02, 0.46], [FT.R + 0.02, 0.06], [FT.R + 0.12, 0.0]]), PM(), stone]);
+  p.push([new THREE.CircleGeometry(FT.R - 0.2, 40), PM(0, 0.06, 0, -Math.PI/2), 0x2f7f9a]);
+  // tiered marble fountain
+  p.push([lathe([[0.001, 0], [0.5, 0], [0.5, 0.12], [0.3, 0.2], [0.2, 0.45], [0.16, 0.9], [0.22, 1.05], [0.3, 1.12], [0.001, 1.12]]), PM(), marble]);
+  p.push([lathe([[0.001, 1.08], [0.25, 1.08], [0.62, 1.14], [0.86, 1.26], [0.9, 1.34], [0.82, 1.34], [0.6, 1.25], [0.001, 1.25]]), PM(), marble]);
+  p.push([lathe([[0.001, 1.25], [0.12, 1.25], [0.09, 1.5], [0.1, 1.72], [0.15, 1.8], [0.001, 1.8]]), PM(), marble]);
+  p.push([lathe([[0.001, 1.78], [0.12, 1.78], [0.36, 1.84], [0.46, 1.93], [0.48, 1.99], [0.42, 1.99], [0.3, 1.92], [0.001, 1.92]]), PM(), marble]);
+  p.push([lathe([[0.001, 1.92], [0.07, 1.92], [0.05, 2.05], [0.08, 2.12], [0.04, 2.2], [0.001, 2.22]]), PM(), 0xd8c070]);
+  for (let i = 0; i < 8; i++){ const a = i/8*Math.PI*2; p.push([SG.sph, PM(Math.cos(a)*0.84, 1.33, Math.sin(a)*0.84, 0, 0, 0, 0.05, 0.03, 0.05), 0xd8c070]); }
+  const m = coloredMesh(p); g.add(m);
+  const water = new THREE.Mesh(new THREE.CircleGeometry(FT.R - 0.21, 48), new THREE.MeshPhongMaterial({ color: 0x5fbcd6, specular: 0xffffff, shininess: 120, transparent: true, opacity: 0.8 }));
+  water.rotation.x = -Math.PI/2; water.position.y = FT.water; g.add(water);
+  for (const [y0, y1, r] of [[1.34, FT.water, 0.9], [1.99, 1.3, 0.48]]){
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.01, r + 0.06, y0 - y1, 40, 1, true), new THREE.MeshBasicMaterial({ color: 0xe8f6fb, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }));
+    c.position.y = (y0 + y1)/2; g.add(c); fountain.curtains.push(c);
+  }
+  // droplets: centre jet + rim spill, simple ballistic particles
+  const N = 360, pos = new Float32Array(N*3), vel = new Float32Array(N*3), life = new Float32Array(N);
+  for (let i = 0; i < N; i++) life[i] = -Math.random()*2;
+  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const drops = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xeaf8ff, size: 0.05, transparent: true, opacity: 0.85, depthWrite: false }));
+  drops.frustumCulled = false; g.add(drops); fountain.drops = drops; fountain.dv = { vel, life, N };
+  for (let i = 0; i < 3; i++){ const r = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.24, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })); r.rotation.x = -Math.PI/2; r.position.y = FT.water + 0.005; g.add(r); fountain.ripples.push({ m: r, t: i*0.9, sw: 0 }); }
+  fountain.g = g;
+  addObs(FT.x - FT.R, FT.x + FT.R, FT.z - FT.R, FT.z + FT.R, 1, 2.6);
+  // swans: S-curved neck, folded raised wings, upswept tail; built facing -z
+  const swan = black => {
+    const body = black ? 0x18161b : 0xf7f5ef, shade = black ? 0x29252c : 0xe6e1d6, beak = black ? 0xd3252a : 0xe86f24, knob = 0x141214, p = [];
+    p.push([SG.sph, PM(0, 0.07, 0.04, 0, 0, 0, 0.27, 0.21, 0.5), body]);
+    p.push([SG.sph, PM(0, 0.1, -0.27, 0, 0, 0, 0.21, 0.2, 0.24), body]);
+    p.push([SG.cone, PM(0, 0.22, 0.5, 1.16, 0, 0, 0.13, 0.26, 0.06), shade]);
+    for (const s of [-1, 1]){
+      p.push([SG.sph, PM(s*0.15, 0.2, 0.08, -0.14, 0, s*0.42, 0.13, 0.12, 0.42), body]);
+      p.push([SG.sph, PM(s*0.12, 0.27, 0.12, -0.22, 0, s*0.25, 0.09, 0.08, 0.34), shade]);
+      if (black) for (let k = 0; k < 4; k++) p.push([SG.cone, PM(s*(0.1 + k*0.025), 0.3 - k*0.015, 0.38 + k*0.04, 1.3, 0, s*0.3, 0.03, 0.14, 0.012), 0xf4f1ea]);
+      p.push([SG.lo, PM(s*0.036, 0.865, -0.395, 0, 0, 0, 0.011, 0.011, 0.011), black ? 0xd02a2a : 0x0e0c0c]);
+    }
+    if (black) for (let k = 0; k < 10; k++) p.push([SG.sph, PM(R(-0.16, 0.16), 0.28 + R(0, 0.05), R(-0.05, 0.32), R(-0.6, -0.2), 0, R(-0.3, 0.3), 0.05, 0.02, 0.09), 0x0c0b0e]);
+    const neck = new THREE.CatmullRomCurve3([V3(0, 0.14, -0.36), V3(0, 0.34, -0.5), V3(0, 0.56, -0.47), V3(0, 0.74, -0.34), V3(0, 0.86, -0.35), V3(0, 0.88, -0.42)]);
+    p.push([new THREE.TubeGeometry(neck, 28, 0.045, 10, false), PM(), body]);
+    p.push([SG.sph, PM(0, 0.2, -0.38, 0, 0, 0, 0.09, 0.1, 0.09), body]);
+    p.push([SG.sph, PM(0, 0.875, -0.42, -0.25, 0, 0, 0.048, 0.05, 0.085), body]);
+    p.push([SG.cone, PM(0, 0.85, -0.53, -2.05, 0, 0, 0.026, 0.11, 0.02), beak]);
+    if (black) p.push([SG.box, PM(0, 0.832, -0.57, -0.5, 0, 0, 0.034, 0.012, 0.012), 0xf4f1ea]);
+    else p.push([SG.sph, PM(0, 0.885, -0.49, 0, 0, 0, 0.022, 0.024, 0.026), knob]);
+    p.push([SG.sph, PM(0, 0.88, -0.475, 0, 0, 0, 0.018, 0.016, 0.02), black ? 0xd3252a : knob]);
+    const o = new THREE.Group(); const mm = coloredMesh(p); mm.scale.setScalar(0.95); o.add(mm); g.add(o); return o;
+  };
+  fountain.swans = [swan(false), swan(true)];
+  // heart sprites
+  const hc = document.createElement('canvas'); hc.width = hc.height = 64; const hg = hc.getContext('2d');
+  hg.fillStyle = '#ffffff'; hg.beginPath(); hg.moveTo(32, 56); hg.bezierCurveTo(4, 36, 2, 14, 18, 10); hg.bezierCurveTo(26, 8, 31, 14, 32, 20); hg.bezierCurveTo(33, 14, 38, 8, 46, 10); hg.bezierCurveTo(62, 14, 60, 36, 32, 56); hg.fill();
+  fountain.heartTex = new THREE.CanvasTexture(hc);
+}
+function spawnHeart(x, y, z){
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: fountain.heartTex, color: [0xff4f7b, 0xff7aa0, 0xe8253f, 0xffb3c8][(Math.random()*4)|0], transparent: true, depthWrite: false, opacity: 0 }));
+  s.position.set(x, y, z); s.scale.setScalar(0.16); fountain.g.add(s);
+  fountain.hearts.push({ s, t: 0, max: 2.4 + Math.random(), ph: Math.random()*6, vx: (Math.random() - 0.5)*0.15 });
+}
+function updateFountain(dt){
+  const F = fountain; F.t += dt;
+  const d = Math.hypot(camera.position.x - FT.x, camera.position.z - FT.z); if (d > 110) return;
+  // droplets
+  const { vel, life, N } = F.dv, pos = F.drops.geometry.attributes.position.array;
+  for (let i = 0; i < N; i++){
+    life[i] -= dt; const k = i*3;
+    if (life[i] <= 0){
+      if (i % 3 === 0){ const a = Math.random()*6.283, s = 0.25 + Math.random()*0.25; pos[k] = 0; pos[k + 1] = 2.2; pos[k + 2] = 0; vel[k] = Math.cos(a)*s; vel[k + 1] = 2.2 + Math.random()*0.6; vel[k + 2] = Math.sin(a)*s; }
+      else { const a = Math.random()*6.283, r = i % 3 === 1 ? 0.9 : 0.48, h = i % 3 === 1 ? 1.33 : 1.98; pos[k] = Math.cos(a)*r; pos[k + 1] = h; pos[k + 2] = Math.sin(a)*r; vel[k] = Math.cos(a)*0.35; vel[k + 1] = 0.1; vel[k + 2] = Math.sin(a)*0.35; }
+      life[i] = 3;
+    }
+    vel[k + 1] -= 9.8*dt; pos[k] += vel[k]*dt; pos[k + 1] += vel[k + 1]*dt; pos[k + 2] += vel[k + 2]*dt;
+    const floor = Math.hypot(pos[k], pos[k + 2]) < 0.88 && pos[k + 1] > 1.2 ? 1.27 : FT.water;
+    if (pos[k + 1] < floor && vel[k + 1] < 0){ life[i] = 0; pos[k + 1] = floor; }
+  }
+  F.drops.geometry.attributes.position.needsUpdate = true;
+  F.curtains.forEach((c, i) => { c.material.opacity = 0.22 + Math.sin(F.t*6 + i*2)*0.06; });
+  // swans: swim side by side around the fountain, then stop and face each other (heart pose)
+  const cyc = F.t % 16, court = cyc > 10.5, blend = court ? Math.min(1, (cyc - 10.5)/1.2, (16 - cyc)/1.2) : 0;
+  if (!court) F.a += dt*0.22;
+  const a = F.a, rr = [1.02, 1.42];
+  F.swans.forEach((s, i) => {
+    const swimX = Math.cos(a - i*0.05)*rr[i], swimZ = Math.sin(a - i*0.05)*rr[i], swimYaw = Math.atan2(Math.sin(a), -Math.cos(a));
+    const tx = -Math.sin(a), tz = Math.cos(a), sgn = i ? -1 : 1, cr = 1.25;
+    const cx = Math.cos(a)*cr + tx*0.5*sgn, cz = Math.sin(a)*cr + tz*0.5*sgn, cYaw = Math.atan2(tx*sgn, tz*sgn);
+    let dy = cYaw - swimYaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    s.position.set(swimX + (cx - swimX)*blend, FT.water - 0.02 + Math.sin(F.t*1.6 + i)*0.012, swimZ + (cz - swimZ)*blend);
+    s.rotation.set(Math.sin(F.t*1.3 + i*2)*0.03, swimYaw + dy*blend, Math.sin(F.t*1.1 + i)*0.04);
+  });
+  if (court && blend > 0.8 && Math.random() < dt*2.6){ const sA = F.swans[0].position, sB = F.swans[1].position; spawnHeart((sA.x + sB.x)/2 + (Math.random() - 0.5)*0.2, FT.water + 1.05, (sA.z + sB.z)/2 + (Math.random() - 0.5)*0.2); }
+  if (!court && Math.random() < dt*0.12){ const s = F.swans[0].position; spawnHeart(s.x, FT.water + 1.0, s.z); }
+  for (let i = F.hearts.length - 1; i >= 0; i--){
+    const h = F.hearts[i]; h.t += dt; const k = h.t/h.max;
+    h.s.position.y += dt*0.45; h.s.position.x += Math.sin(h.t*3 + h.ph)*dt*0.12 + h.vx*dt;
+    h.s.scale.setScalar(0.14 + k*0.2); h.s.material.opacity = Math.min(1, h.t*4)*(1 - k);
+    if (k >= 1){ F.g.remove(h.s); h.s.material.dispose(); F.hearts.splice(i, 1); }
+  }
+  for (const r of F.ripples){ r.t += dt; const k = (r.t % 2.7)/2.7; if (k < r.sw){ const s = F.swans[(Math.random()*2)|0].position; r.m.position.x = s.x; r.m.position.z = s.z; } r.sw = k; r.m.scale.setScalar(1 + k*3); r.m.material.opacity = 0.35*(1 - k); }
+}
 
 function boatShape(Lb, Wb){
   const s = new THREE.Shape(); s.moveTo(-Wb/2, -Lb/2); s.lineTo(Wb/2, -Lb/2); s.lineTo(Wb/2, Lb*0.18);
@@ -1895,6 +2000,41 @@ const nhau = { phase: 'off', t: 0, cheers: 0, drunk: 0, eye: 0, jailed: false, p
   nhau.sA = standDouble(looks[0]); nhau.sB = standDouble(looks[1]);
 }
 
+// more street-drinking tables around the first one, with a string of bulbs and a grill cart
+{
+  const SPOTS2 = [[-49.4, 17.4, 0xd23a2a, 4], [-46.3, 17.8, 0x2f6fb5, 3], [-50.9, 20.9, 0x3a9a4a, 4], [-47.6, 21.1, 0xd23a2a, 3], [-44.2, 20.4, 0x2f6fb5, 4]];
+  const parts = [], bg = new THREE.Group(); scene.add(bg);
+  const drinkers = [
+    { sex: 'm' }, { sex: 'f', dress: false }, { sex: 'm', old: true }, { sex: 'f', hairStyle: 'long' }, { sex: 'm', shorts: true }
+  ];
+  SPOTS2.forEach(([x, z, col, n], ti) => {
+    const y = 1.0;
+    P3(parts, SG.box, col, x, y + 0.58, z, 0.74, 0.04, 0.74); for (const sx of [-1, 1]) for (const sz of [-1, 1]) P3(parts, SG.box, col, x + sx*0.31, y + 0.27, z + sz*0.31, 0.05, 0.54, 0.05);
+    for (let i = 0; i < 6; i++){ const a = i*1.1 + ti, r = 0.12 + (i % 3)*0.08; P3(parts, SG.cyl, i % 2 ? 0x1f7a3a : 0xd8b04a, x + Math.cos(a)*r, y + 0.66, z + Math.sin(a)*r, 0.033, 0.12, 0.033); }
+    P3(parts, SG.cyl, 0xf3efe6, x, y + 0.61, z, 0.14, 0.012, 0.14); for (let k = 0; k < 6; k++) P3(parts, SG.sph, [0xd8541f, 0xe8742e, 0x9a6a3a][k % 3], x + R(-.07, .07), y + 0.63, z + R(-.07, .07), 0.035, 0.022, 0.045, 0, R(0, 3), 0);
+    addObs(x - 0.42, x + 0.42, z - 0.42, z + 0.42, 1, 1.7);
+    const seats = [[0.78, 0, Math.PI/2], [-0.78, 0, -Math.PI/2], [0, 0.78, 0], [0, -0.78, Math.PI]];
+    for (let k = 0; k < 4; k++){
+      const [dx, dz, ry] = seats[k], sc = k % 2 ? 0xd23a2a : 0x2f6fb5;
+      P3(parts, SG.cyl, sc, x + dx, y + 0.4, z + dz, 0.17, 0.04, 0.17); for (let l = 0; l < 4; l++){ const a = l*Math.PI/2 + Math.PI/4; P3(parts, SG.box, sc, x + dx + Math.cos(a)*0.13, y + 0.2, z + dz + Math.sin(a)*0.13, 0.04, 0.4, 0.04); }
+      if (k < n) person(x + dx, y, z + dz, Object.assign({ seated: true, ry, kid: false }, k >= 2 ? { parent: bg } : {}, drinkers[(k + ti) % drinkers.length]));
+    }
+  });
+  // grill cart with smoke
+  P3(parts, SG.box, 0x8a8f94, -43.4, 1.45, 16.4, 1.2, 0.08, 0.6); P3(parts, SG.box, 0x3a3a3a, -43.4, 1.5, 16.4, 1.0, 0.06, 0.45);
+  for (let k = 0; k < 8; k++) P3(parts, SG.sph, 0xd8541f, -43.8 + k*0.11, 1.56, 16.4 + (k % 2 ? 0.08 : -0.08), 0.04, 0.025, 0.06);
+  for (const sx of [-0.55, 0.55]) for (const sz of [-0.25, 0.25]) P3(parts, SG.box, 0x5a5f64, -43.4 + sx, 1.22, 16.4 + sz, 0.04, 0.45, 0.04);
+  for (const sx of [-0.55, 0.55]) P3(parts, SG.cyl, 0x1c1b1a, -43.4 + sx, 1.12, 16.4, 0.12, 0.05, 0.12, 0, 0, Math.PI/2);
+  addObs(-44.1, -42.7, 16.0, 16.8, 1, 1.8);
+  // string of bulbs between two poles
+  for (const [px, pz] of [[-54.6, 15.9], [-42.4, 15.9], [-42.4, 22.6], [-54.6, 22.6]]){ P3(parts, SG.cyl, 0x5a4a3a, px, 2.6, pz, 0.05, 3.2, 0.05); obsAround(px, pz, 0.1, 1, 4); }
+  scene.add(coloredMesh(parts));
+  const bulbM = new THREE.MeshBasicMaterial({ color: 0xffe08a }), bulbG = new THREE.SphereGeometry(0.06, 8, 6);
+  const line = (a, b) => { for (let k = 0; k <= 16; k++){ const t = k/16, b0 = new THREE.Mesh(bulbG, bulbM); b0.position.set(a[0] + (b[0] - a[0])*t, 4.1 - Math.sin(t*Math.PI)*0.45, a[1] + (b[1] - a[1])*t); scene.add(b0); } };
+  line([-54.6, 15.9], [-42.4, 15.9]); line([-54.6, 22.6], [-42.4, 22.6]); line([-54.6, 15.9], [-54.6, 22.6]); line([-42.4, 15.9], [-42.4, 22.6]); line([-54.6, 15.9], [-42.4, 22.6]);
+  nhau.grill = [-43.4, 1.7, 16.4];
+}
+
 /* ---------------- Công an xã Vĩnh Hải: police post with a holding cell ---------------- */
 const STATION = { x0: 83, x1: 95, z0: 19, z1: 28, floor: 1.15, cellX: 90 };
 {
@@ -2217,7 +2357,7 @@ $('snd').onclick = () => { soundOn = !soundOn; $('snd').textContent = 'Âm thanh
 
 /* ---------------- game state ---------------- */
 const st = { tried: new Set(), dishes: 0, shots: new Set(), trips: 0, steps: 0, spent: 0, tickets: {}, returnTrip: false };
-const SPOTS = 17;
+const SPOTS = 18;
 const P = { x: 0, z: 8.5, feet: 1, yaw: 0, pitch: -0.04, camY: 1 + EYE };
 let mode = 'walk';           // walk | busy | boat | glass | fade
 let busy = null, eyeOff = 0, lastStep = -1, lastTop = 1;
@@ -2676,6 +2816,8 @@ function updateNhau(dt){
 $('nhauDzo').onclick = nhauCheers; $('nhauMoi').onclick = nhauMoi; $('nhauQuay').onclick = nhauQuay;
 addEventListener('keydown', e => { if (mode === 'nhau' && e.code === 'Space' && !menuOpen){ e.preventDefault(); nhauCheers(); } });
 acts.push(
+  { x: FT.x - 2.4, z: FT.z + 1.2, y: 1, r: 1.9, label: 'Ngắm đôi thiên nga ở đài phun nước', fn: () => { takePhoto('Đài phun nước thiên nga'); toast('Đôi thiên nga đen trắng', 'Hai con bơi quấn quýt quanh đài phun nước, thỉnh thoảng chụm cổ thành hình trái tim.', 4200); } },
+  { x: FT.x + 2.4, z: FT.z + 1.2, y: 1, r: 1.9, label: 'Ngắm đôi thiên nga ở đài phun nước', fn: () => { takePhoto('Đài phun nước thiên nga'); toast('Đôi thiên nga đen trắng', 'Hai con bơi quấn quýt quanh đài phun nước, thỉnh thoảng chụm cổ thành hình trái tim.', 4200); } },
   { x: NH.x, z: NH.z - 1.7, y: 1, r: 2.0, label: () => nhau.jailed ? 'Nhóm nhậu' : 'Nhậu cùng nhóm bạn vỉa hè 🍻', fn: startNhau },
   { x: 93.9, z: 23.6, y: STATION.floor, r: 1.6, label: () => nhau.jailed ? 'Viết bản cam kết không quậy phá' : 'Bàn viết cam kết (phòng trống)', fn: signPledge }
 );
@@ -3087,7 +3229,7 @@ let last = performance.now(), T = 0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last)/1000); last = now; T += dt;
-  updatePlayer(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateNhau(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
+  updatePlayer(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateNhau(dt); updateFountain(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
   sky.position.copy(camera.position);
   const fx = camera.position.x, fz = camera.position.z, fy = Math.max(0, camera.position.y - 2);
   sun.target.position.set(fx, fy, fz); sun.position.set(fx + sunDir.x*200, fy + sunDir.y*200, fz + sunDir.z*200);
