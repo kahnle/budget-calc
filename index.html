@@ -122,6 +122,16 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .bgbtns button:hover{background:rgba(216,175,87,.3)}
 .bgbtns button.danger{border-color:rgba(244,234,216,.25);background:none;color:var(--mute)}
 @media (max-width:700px){.bgbody{flex-direction:column;align-items:center}.bgaside{width:100%}.bghead b{font-size:17px}}
+.heisthud{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:rgba(20,8,8,.78);border:2px solid #e0442c;border-radius:12px;padding:5px 12px 6px;text-align:center;width:min(240px,62vw);color:#fff;font:600 12px var(--body);animation:hpulse .5s infinite alternate}
+.heisthud b{display:block;font:900 14px/1.2 var(--body);letter-spacing:.04em;color:#ffd24a}
+.heisthud .hbar{height:6px;background:rgba(255,255,255,.15);border-radius:99px;margin:6px 0 4px;overflow:hidden}
+.heisthud .hbar i{display:block;height:100%;width:100%;background:#5cc6c4;border-radius:99px;transition:width .2s}
+.heisthud small{color:#d8cbb4;font-size:11px}
+@keyframes hpulse{from{box-shadow:0 0 0 0 rgba(224,68,44,.6)}to{box-shadow:0 0 22px 4px rgba(224,68,44,.6)}}
+.heistvig{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 55%,rgba(220,30,30,.55) 100%);animation:hvig .45s infinite alternate}
+@keyframes hvig{from{background:radial-gradient(ellipse at center,transparent 55%,rgba(220,30,30,.55) 100%)}to{background:radial-gradient(ellipse at center,transparent 55%,rgba(40,80,240,.55) 100%)}}
+.heistbig{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) rotate(-6deg);z-index:31;pointer-events:none;font:900 clamp(34px,9vw,84px)/1 var(--body);color:#ffd24a;-webkit-text-stroke:3px #2a0a06;text-shadow:0 6px 0 #2a0a06,0 10px 30px rgba(0,0,0,.6);animation:hbig .5s cubic-bezier(.2,1.6,.4,1) both;white-space:nowrap}
+@keyframes hbig{from{transform:translate(-50%,-50%) rotate(-6deg) scale(2.6);opacity:0}to{transform:translate(-50%,-50%) rotate(-6deg) scale(1);opacity:1}}
 .ridebar .where{flex-basis:100%;text-align:center;font-weight:600;font-size:13px;color:var(--sea)}
 .glass{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .8s}
 .glass.on{opacity:1}
@@ -213,6 +223,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 </div>
 
 <div id="bgUI" class="bgui" hidden><div class="bgcard"><div class="bghead"><b id="bgTitle"></b><button id="bgClose" type="button" aria-label="Rời bàn cờ">✕</button></div><div class="bgbody"><canvas id="bgCanvas" width="400" height="400"></canvas><div class="bgaside"><div id="bgStatus" class="bgstatus"></div><div id="bgSide" class="bgside"></div><div id="bgBtns" class="bgbtns"></div></div></div></div></div>
+<div id="heistVig" class="heistvig" hidden></div><div id="heistHud" class="heisthud" hidden><b>🚨 BẢO VỆ ĐANG RƯỢT!</b><span id="heistDist">Bảo vệ cách bạn …</span><div class="hbar"><i id="heistStam"></i></div><small>Sức chạy</small></div><div id="heistBig" class="heistbig" hidden>BẮT ĐƯỢC RỒI!</div>
 <div class="help panel" id="help">
   <b>W A S D</b> đi · <b>Shift</b> chạy<br>
   <b>Kéo chuột</b> để nhìn quanh<br>
@@ -1806,7 +1817,7 @@ function villa(x, z){
 }
 /* ---- Amanoi villas on the mountainside: forest stairways, private infinity pools, dark-timber pavilions ---- */
 {
-  const glassM = new THREE.MeshStandardMaterial({ color: 0x7a9aa4, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.28, envMap: envTex }), lantern = [], trailPts = [];
+  const glassM = new THREE.MeshStandardMaterial({ color: 0x7a9aa4, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.28, envMap: envTex }), lantern = [], trailPts = [], trailYs = [];
   // stairways that follow the slope (each step ≤ 0.42 m), with lanterns
   for (const tr of AMAN_TRAILS){
     const P = tr.pts, seg = []; let L = 0;
@@ -1821,8 +1832,8 @@ function villa(x, z){
       const [x, z, ax] = xs[i], y = ys[i], hw = 0.85, hl = RUNT/2 + 0.01;
       const hx = ax ? hl : hw, hz = ax ? hw : hl;
       addWalk(x - hx, x + hx, z - hz, z + hz, y, stairIdx++); stepBoxes.push({ x, z, sx: hx*2, sz: hz*2, y0: y - 2.2, y1: y });
-      trailPts.push([x, z]);
-      if (i % 22 === 11){ const lx = x + (ax ? 0 : 1.1), lz = z + (ax ? 1.1 : 0), ly = y; P3(lantern, SG.box, 0x3a3532, lx, ly + 0.3, lz, 0.22, 0.6, 0.22); P3(lantern, SG.box, 0xfff0c8, lx, ly + 0.68, lz, 0.18, 0.16, 0.18); P3(lantern, SG.box, 0x2a2522, lx, ly + 0.8, lz, 0.28, 0.05, 0.28); }
+      trailPts.push([x, z]); trailYs.push([x, z, y]);
+      if (i % 11 === 5){ const sd = (i/11|0) % 2 ? -1 : 1, lx = x + (ax ? 0 : 1.1*sd), lz = z + (ax ? 1.1*sd : 0), ly = y; P3(lantern, SG.box, 0x3a3532, lx, ly + 0.3, lz, 0.22, 0.6, 0.22); P3(lantern, SG.box, 0xfff0c8, lx, ly + 0.68, lz, 0.18, 0.16, 0.18); P3(lantern, SG.box, 0x2a2522, lx, ly + 0.8, lz, 0.28, 0.05, 0.28); }
     }
     for (let i = 1; i < P.length - 1; i++){ const [x, z] = P[i], s = seg[i][2], y = ys[Math.round(s/RUNT)]; addWalk(x - 0.85, x + 0.85, z - 0.85, z + 0.85, y, stairIdx++); stepBoxes.push({ x, z, sx: 1.7, sz: 1.7, y0: y - 2.2, y1: y }); }
   }
@@ -1874,6 +1885,81 @@ function villa(x, z){
     if (v.guests){ person(cx + 5.3, Y + 0.48, cz - 4.2, { lie: true, swim: true, sex: 'f', kid: false, ry: Math.PI, armUp: true }); if (vi % 2 === 0) person(cx + 7.1, Y + 0.48, cz - 4.2, { lie: true, swim: true, sex: 'm', kid: false, ry: Math.PI }); }
     AMAN_ACTS.push({ x: cx - 0.5, z: cz + 2.4, y: Y + 0.15, r: 2.4, label: 'Tham quan ' + v.name, fn: () => { takePhoto('Villa hồ bơi Amanoi'); toast(v.name + ' · Amanoi', 'Villa cheo leo trên sườn núi Chúa, mái ngói xám thấp, cột gỗ sẫm, cửa kính gấp mở ra hồ bơi vô cực riêng nhìn xuống vịnh. Bồn tắm đá, giường king, sala ăn tối giữa rừng.', 6500); startBusy({ dur: 4, pitch: -0.12, fov: 62 }); } });
   });
+  // ---- wayfinding: paved guide paths on the plateau, arrow signposts at every fork, a map at the top of the stairs ----
+  {
+    const trailY = (x, z) => { let b = 1e9, y = 24; for (const [px, pz, py] of trailYs){ const d = (px - x)**2 + (pz - z)**2; if (d < b){ b = d; y = py; } } return y; };
+    const gp = [];
+    const strip = (pts, y) => {
+      for (let i = 1; i < pts.length; i++){
+        const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], L = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(-(z1 - z0), x1 - x0);
+        P3(gp, SG.box, 0xe6d3a8, (x0 + x1)/2, y + 0.012, (z0 + z1)/2, L + 1.3, 0.024, 1.3, 0, a, 0);
+        for (const s of [-1, 1]) P3(gp, SG.box, 0x8a6a3a, (x0 + x1)/2 + Math.sin(a)*s*0.68, y + 0.016, (z0 + z1)/2 + Math.cos(a)*s*0.68, L + 1.3, 0.03, 0.08, 0, a, 0);
+        for (let d = 1.4; d < L - 0.6; d += 3.2){ const cx = x0 + (x1 - x0)*d/L, cz = z0 + (z1 - z0)*d/L;
+          for (const s of [-1, 1]) P3(gp, SG.box, 0x9a7440, cx - Math.cos(a)*0.17 + Math.sin(a)*s*0.17, y + 0.03, cz + Math.sin(a)*0.17 + Math.cos(a)*s*0.17, 0.55, 0.012, 0.11, 0, a + s*0.75, 0); }
+      }
+    };
+    strip([[150, -44.2], [147.9, -45.8], [147.9, -48]], 24); strip([[147.9, -48], [147.9, -49.2], [150, -50.6], [150, -60]], 24.4); strip([[150, -60], [150, -103.6]], 24);
+    strip([[151, -44.6], [179.5, -44.6], [179.6, -45.4]], 24);
+    // signposts: cream boards shaped as arrows, readable from both sides
+    const board = (title, sub, dir, x, y, z) => {
+      const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(-dir[1], dir[0]); scene.add(g);
+      for (const back of [0, 1]){
+        const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4;
+        const draw = () => { c.clearRect(0, 0, 512, 128); c.save(); if (back){ c.translate(512, 0); c.scale(-1, 1); }
+          c.fillStyle = '#2a1d14'; c.beginPath(); c.moveTo(6, 10); c.lineTo(430, 10); c.lineTo(506, 64); c.lineTo(430, 118); c.lineTo(6, 118); c.closePath(); c.fill();
+          c.fillStyle = '#f2e6c9'; c.beginPath(); c.moveTo(14, 18); c.lineTo(426, 18); c.lineTo(494, 64); c.lineTo(426, 110); c.lineTo(14, 110); c.closePath(); c.fill(); c.restore();
+          const tx = back ? 96 : 30; c.fillStyle = '#2a1d14'; c.textAlign = 'left'; c.textBaseline = 'middle';
+          let fs = sub ? 40 : 46; c.font = `800 ${fs}px 'Be Vietnam Pro',system-ui,sans-serif`; while (c.measureText(title).width > 380 && fs > 18){ fs -= 2; c.font = `800 ${fs}px 'Be Vietnam Pro',system-ui,sans-serif`; } c.fillText(title, tx, sub ? 50 : 66);
+          if (sub){ c.font = `600 26px 'Be Vietnam Pro',system-ui,sans-serif`; c.fillStyle = '#8a5a2a'; c.fillText(sub, tx, 90); }
+          tex.needsUpdate = true; };
+        draw(); signs.push(draw);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.1 }));
+        m.position.set(1.05, 0, back ? -0.035 : 0.035); if (back) m.rotation.y = Math.PI; g.add(m);
+      }
+    };
+    const post = (x, z, y, items) => {
+      const p = []; P3(p, SG.box, 0x2a1d14, x, y + 1.25, z, 0.14, 2.5, 0.14); P3(p, SG.box, 0x3a3532, x, y + 0.1, z, 0.36, 0.2, 0.36); P3(p, SG.box, 0xd8af57, x, y + 2.55, z, 0.2, 0.1, 0.2); scene.add(coloredMesh(p));
+      addObs(x - 0.13, x + 0.13, z - 0.13, z + 0.13, y, y + 2.6);
+      items.forEach(([t, sub, d], k) => board(t, sub, d, x, y + 2.25 - k*0.54, z));
+    };
+    const G = vi => 'Bàn ' + BG_VILLA[vi][1].replace('Cờ', 'cờ');
+    const N = [0, -1], S = [0, 1], E = [1, 0], W = [-1, 0];
+    post(146.6, -44.4, 24, [['Ocean Pavilion', G(0), N], ['Ocean Pool Villa', G(1) + ' · ' + 'Residence', N], ['Mountain Pavilion', G(4) + ' · Mountain Pool', E], ['Sảnh · Lớp yoga', 'Trà chiều · tập yoga', [1, -0.35]]]);
+    post(152.3, -101.6, 24, [['Ocean Pavilion', G(0), N], ['Ocean Pool Villa', 'Amanoi Residence', N], ['Sảnh Amanoi', 'Về khu đón khách', S]]);
+    post(148.6, -151.7, trailY(150, -150), [['Ocean Pavilion', G(0), N], ['Ocean Pool Villa', G(1) + ' · Residence', E], ['Sảnh Amanoi', 'Bậc thang lên', S]]);
+    post(152.4, -178.4, 26, [['Sảnh Amanoi', 'Ocean Pool Villa', S]]);
+    post(170.2, -171.4, 41, [['Amanoi Residence', G(2) + ' · đi qua villa', E], ['Sảnh Amanoi', 'Ocean Pavilion', S]]);
+    post(203.5, -167.6, 52, [['Ocean Pool Villa', 'Sảnh Amanoi', W]]);
+    post(177.6, -47.7, 24, [['Mountain Pavilion', G(4), E], ['Mountain Pool Villa', G(3), E]]);
+    post(203.8, -44.3, trailY(202, -46), [['Mountain Pavilion', G(4), N], ['Mountain Pool Villa', G(3), N], ['Sảnh Amanoi', 'Khu đón khách', W]]);
+    post(200.6, -63.2, 59, [['Mountain Pool Villa', G(3) + ' · đi qua villa', N], ['Sảnh Amanoi', 'Bậc thang xuống', S]]);
+    post(198, -77.1, 59, [['Mountain Pool Villa', G(3), N]]);
+    post(201.6, -115, 60, [['Mountain Pavilion', 'Sảnh Amanoi', S]]);
+    scene.add(coloredMesh(gp, false));
+    // trail map at the top of the stairs: forward on the board = into the resort
+    { const cv = document.createElement('canvas'); cv.width = 768; cv.height = 640; const c = cv.getContext('2d'), tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4;
+      const X0 = 132, X1 = 226, Z0 = -198, Z1 = -36, M = 40, sx = x => M + (x - X0)/(X1 - X0)*(768 - 2*M), sy = z => 70 + (z - Z0)/(Z1 - Z0)*(640 - 70 - M);
+      const draw = () => {
+        c.fillStyle = '#efe4c8'; c.fillRect(0, 0, 768, 640); c.strokeStyle = '#2a1d14'; c.lineWidth = 10; c.strokeRect(5, 5, 758, 630);
+        c.fillStyle = '#2a1d14'; c.font = "800 34px 'Alegreya',Georgia,serif"; c.textAlign = 'center'; c.fillText('ĐƯỜNG ĐẾN CÁC VILLA AMANOI', 384, 48);
+        c.fillStyle = '#c9d9b4'; for (const [a, b, d, e] of [[139, 180, -80, -43.4], [139, 160, -104, -80]]) c.fillRect(sx(a), sy(d), sx(b) - sx(a), sy(e) - sy(d));
+        c.fillStyle = '#4a6a3a'; c.font = "700 20px 'Be Vietnam Pro',sans-serif"; c.fillText('SẢNH AMANOI', sx(152), sy(-68));
+        c.strokeStyle = '#9a7440'; c.lineWidth = 9; c.lineJoin = 'round'; c.setLineDash([14, 8]);
+        const lines = [[[150, -44], [150, -104]], [[150, -44.6], [179.5, -44.6]], ...AMAN_TRAILS.map(t => t.pts)];
+        for (const L of lines){ c.beginPath(); L.forEach(([x, z], i) => i ? c.lineTo(sx(x), sy(z)) : c.moveTo(sx(x), sy(z))); c.stroke(); }
+        c.setLineDash([]);
+        AMAN_VILLAS.forEach((v, i) => { c.fillStyle = '#2a1d14'; c.fillRect(sx(v.x - 9), sy(v.z - 8), sx(v.x + 9) - sx(v.x - 9), sy(v.z + 8) - sy(v.z - 8)); c.fillStyle = '#5cc6c4'; c.fillRect(sx(v.x - 6.2), sy(v.z - 7.5), sx(v.x + 3.2) - sx(v.x - 6.2), sy(v.z - 2.5) - sy(v.z - 7.5));
+          c.fillStyle = '#2a1d14'; c.font = "800 19px 'Be Vietnam Pro',sans-serif"; const right = v.x > 190, tx = right ? sx(v.x - 10) : sx(v.x + 10); c.textAlign = right ? 'right' : 'left'; c.fillText(v.name, tx, sy(v.z) - 2);
+          c.font = "600 16px 'Be Vietnam Pro',sans-serif"; c.fillStyle = '#8a5a2a'; c.fillText(G(i), tx, sy(v.z) + 18); });
+        const hx = sx(150), hy = sy(-44); c.fillStyle = '#d23a2a'; c.beginPath(); c.arc(hx, hy, 11, 0, Math.PI*2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
+        c.fillStyle = '#d23a2a'; c.font = "800 18px 'Be Vietnam Pro',sans-serif"; c.textAlign = 'left'; c.fillText('Bạn đang ở đây', hx + 16, hy + 2);
+        c.fillStyle = '#5a4a3a'; c.font = "500 15px 'Be Vietnam Pro',sans-serif"; c.textAlign = 'center'; c.fillText('Đi theo lối lát đá vàng và bảng mũi tên ở mỗi ngã rẽ', 384, 622);
+        tex.needsUpdate = true; };
+      draw(); signs.push(draw);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.0), new THREE.MeshLambertMaterial({ map: tex })); m.position.set(143.4, 25.75, -44.15); scene.add(m);
+      const p = []; P3(p, SG.box, 0x2a1d14, 143.4, 25.75, -44.25, 2.6, 2.2, 0.12); for (const s of [-1, 1]) P3(p, SG.box, 0x2a1d14, 143.4 + s*1.1, 24.4, -44.25, 0.14, 0.8, 0.14); P3(p, SG.box, 0x2a1d14, 143.4, 26.95, -44.2, 2.8, 0.12, 0.4); scene.add(coloredMesh(p));
+      addObs(142.1, 144.7, -44.4, -44.1, 24, 27); }
+  }
   // Núi Chúa forest around the villas: dry evergreen trees, shrubs and granite boulders
   const near = (x, z, r) => { for (const [px, pz] of trailPts) if (Math.abs(px - x) < r && Math.abs(pz - z) < r) return true; return false; };
   const okSpot = (x, z, pad) => {
@@ -3424,14 +3510,14 @@ function arrestToStation(){
 }
 function signPledge(){
   if (!nhau.jailed) return toast('Phòng tạm giữ', 'Phòng đang trống. Mong là không ai phải vào đây!', 2600);
-  openChoice('Bản cam kết', 'Tôi xin cam kết không tái phạm hành vi gây rối trật tự công cộng, ứng xử văn minh khi du lịch Vĩnh Hy.', [
+  openChoice('Bản cam kết', nhau.reason === 'swan' ? 'Tôi xin cam kết không bắt trộm, không quấy rối thiên nga và động vật ở khu du lịch, ứng xử văn minh khi du lịch Vĩnh Hy.' : 'Tôi xin cam kết không tái phạm hành vi gây rối trật tự công cộng, ứng xử văn minh khi du lịch Vĩnh Hy.', [
     { label: 'Ký cam kết & xin được về', right: '✍' },
     { label: 'Ngồi suy nghĩ thêm', right: '' }
   ], i => {
     if (i !== 0) return toast('Phòng tạm giữ', 'Cán bộ trực ban: "Khi nào nghĩ thông thì viết cam kết nhé."', 3000);
     sfx.chime();
     fadeTo(() => {
-      nhau.jailed = false; nhau.pledges++;
+      nhau.jailed = false; nhau.pledges++; nhau.reason = '';
       nhau.cops[0].position.set(...nhau.copHome[0].slice(0, 3)); nhau.cops[0].rotation.y = nhau.copHome[0][3];
       tp(86, 16.4, 1.02, 0);
       toast('Đã ký cam kết', 'Cán bộ: "Lần sau vui chơi văn minh nhé. Chúc bạn tham quan Vĩnh Hy vui vẻ!"', 5000);
@@ -4125,6 +4211,8 @@ const BG_GAMES = {
   /* ---------------- chess ---------------- */
   chess: {
     GL: { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' },
+    // the pawn glyph shows as a black emoji on iPhone/iPad, so it is drawn as a shape
+    pawn(ctx, x, y, c){ y -= c*0.04; ctx.beginPath(); ctx.arc(x, y - c*0.17, c*0.11, 0, Math.PI*2); ctx.moveTo(x - c*0.1, y - c*0.06); ctx.quadraticCurveTo(x, y - c*0.11, x + c*0.1, y - c*0.06); ctx.lineTo(x + c*0.06, y - c*0.04); ctx.quadraticCurveTo(x + c*0.07, y + c*0.12, x + c*0.17, y + c*0.2); ctx.lineTo(x + c*0.21, y + c*0.27); ctx.lineTo(x - c*0.21, y + c*0.27); ctx.lineTo(x - c*0.17, y + c*0.2); ctx.quadraticCurveTo(x - c*0.07, y + c*0.12, x - c*0.06, y - c*0.04); ctx.closePath(); ctx.lineJoin = 'round'; ctx.lineWidth = c*0.05; ctx.stroke(); ctx.fill(); },
     start(){ bgReset(); bg.s = BGL.chess.init(); bgSay('Lượt bạn (trắng).'); bgButtons([['Ván mới', () => { this.start(); bgRender(); }], ['Rời bàn', bgClose, 'danger']]); },
     draw(ctx, S){
       const c = S/8;
@@ -4134,7 +4222,7 @@ const BG_GAMES = {
       for (const m of bg.hl){ ctx.fillStyle = bg.s.b[m.t] ? 'rgba(200,60,40,.45)' : 'rgba(40,40,40,.28)'; ctx.beginPath(); ctx.arc((m.t & 7)*c + c/2, (m.t >> 3)*c + c/2, bg.s.b[m.t] ? c*0.45 : c*0.15, 0, Math.PI*2); ctx.fill(); }
       if (BGL.chess.inCheck(bg.s)){ const k = bg.s.b.indexOf(bg.s.turn + 'K'); ctx.fillStyle = 'rgba(220,40,40,.45)'; ctx.fillRect((k & 7)*c, (k >> 3)*c, c, c); }
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${c*0.78}px "Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",serif`;
-      for (let q = 0; q < 64; q++){ const p = bg.s.b[q]; if (!p) continue; const x = (q & 7)*c + c/2, y = (q >> 3)*c + c/2 + c*0.04; ctx.lineWidth = c*0.06; ctx.strokeStyle = p[0] === 'w' ? '#2a1d14' : '#f4ead8'; ctx.fillStyle = p[0] === 'w' ? '#fffaf0' : '#1c1612'; ctx.strokeText(this.GL[p[1]], x, y); ctx.fillText(this.GL[p[1]], x, y); }
+      for (let q = 0; q < 64; q++){ const p = bg.s.b[q]; if (!p) continue; const x = (q & 7)*c + c/2, y = (q >> 3)*c + c/2 + c*0.04; ctx.lineWidth = c*0.06; ctx.strokeStyle = p[0] === 'w' ? '#2a1d14' : '#f4ead8'; ctx.fillStyle = p[0] === 'w' ? '#fffaf0' : '#1c1612'; if (p[1] === 'P') this.pawn(ctx, x, y, c); else { ctx.strokeText(this.GL[p[1]] + '\uFE0E', x, y); ctx.fillText(this.GL[p[1]] + '\uFE0E', x, y); } }
       ctx.fillStyle = 'rgba(40,30,20,.55)'; ctx.font = `600 ${c*0.18}px sans-serif`; for (let k = 0; k < 8; k++){ ctx.fillText('abcdefgh'[k], k*c + c*0.88, S - c*0.1); ctx.fillText(8 - k, c*0.1, k*c + c*0.15); }
     },
     click(x, y){
@@ -4338,6 +4426,147 @@ function bgThumb(kind){
 }
 
 for (const b of AMAN_BOARDS){ const m = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.82), new THREE.MeshLambertMaterial({ map: bgThumb(b.kind) })); m.rotation.x = -Math.PI/2; m.rotation.z = Math.PI; m.position.set(b.x, b.y, b.z); m.receiveShadow = true; scene.add(m); }
+/* ---------------- swan heist: grab the white swan, get chased down by the resort guards ---------------- */
+const heist = { phase: '', t: 0, guards: [], carry: null, stam: 1, tired: 0, slow: 0, sayT: 0, whT: 0, flapT: 5, cam: null, fly: null, tk: null, count: 0, g2: false };
+{
+  const mk = () => { const g = new THREE.Group(); g.rotation.order = 'YXZ'; g.visible = false; scene.add(g); g.userData.rig = person(0, 0, 0, { parent: g, anim: true, sex: 'm', shirt: 0x5b8fd0, pants: 0x1c2840, cap: 0x1c2840, kid: false, old: false, hairStyle: 'crew' }).userData.rig; return g; };
+  heist.guards = [mk(), mk()];
+  const c = new THREE.Group(); c.visible = false; scene.add(c);
+  c.add(fountain.swans[0].children[0].clone());
+  const wm = new THREE.MeshLambertMaterial({ color: 0xf4f1ea }); c.userData.w = [];
+  for (const s of [-1, 1]){ const pv = new THREE.Group(); pv.position.set(s*0.15, 0.25, 0.06); const w = new THREE.Mesh(SG.sph, wm); w.scale.set(0.34, 0.035, 0.2); w.position.set(s*0.32, 0, 0.04); pv.add(w); c.add(pv); c.userData.w.push([pv, s]); }
+  heist.carry = c;
+}
+const honk = () => { tone(390, 0.16, 'sawtooth', 0.05, 290); setTimeout(() => tone(420, 0.22, 'sawtooth', 0.05, 280), 170); };
+const whistle = () => { for (let i = 0; i < 3; i++) setTimeout(() => tone(2900 + (i % 2)*350, 0.09, 'square', 0.022), i*95); };
+function heistAsk(){
+  if (heist.phase) return;
+  openChoice('Thiên nga trắng', 'Con thiên nga trắng đang bơi sát mép bồn, trông có vẻ… rất dễ ôm. Bảo vệ khu du lịch đứng ngay đầu cầu tàu.', [
+    { label: 'Lén ôm trộm thiên nga 🦢', right: 'liều' },
+    { label: 'Thôi, chỉ ngắm thôi', right: '' }
+  ], i => { if (i !== 0) return toast('Ngoan đấy!', 'Thiên nga là của chung, ngắm thôi là đủ đẹp rồi.', 2600); heistGrab(); });
+}
+function heistGrab(){
+  initAudio(); Object.assign(heist, { phase: 'grab', t: 0, stam: 1, tired: 0, slow: 0, sayT: 2, whT: 0, flapT: 5 + Math.random()*2, fly: null, tk: null, g2: false });
+  mode = 'heist'; const sw = fountain.swans[0]; sw.updateMatrixWorld(); heist.from = new THREE.Vector3().setFromMatrixPosition(sw.matrixWorld);
+  P.yaw = Math.atan2(-(FT.x - P.x), -(FT.z - P.z)); P.pitch = -0.15; P.spd = 0;
+  noiseHit(0.45, 'lowpass', 900, 0.3); puff(heist.from.x, FT.water + 0.2, heist.from.z, 8, { size: 0.3, spread: 0.5, op: 0.6 }); honk();
+  toast('Bạn ôm gọn con thiên nga trắng!', 'Nó kêu "quác quác" ầm ĩ… và bảo vệ đã nghe thấy.', 3000);
+}
+function heistGuardStep(g, tx, tz, spd, dt){
+  const dx = tx - g.position.x, dz = tz - g.position.z, d = Math.hypot(dx, dz); if (d < 1e-3) return d;
+  let ux = dx/d, uz = dz/d; const step = Math.min(d, spd*dt);
+  const ok = (x, z) => { const s = supportAt(x, z, g.position.y + 0.6); return s && !blocked(x, z, s.top) && Math.abs(s.top - g.position.y) < 0.7 ? s : null; };
+  let s = ok(g.position.x + ux*step, g.position.z + uz*step);
+  if (!s) for (const a of [0.6, -0.6, 1.2, -1.2, 1.7, -1.7]){ const c = Math.cos(a), sn = Math.sin(a), vx = ux*c - uz*sn, vz = ux*sn + uz*c; s = ok(g.position.x + vx*step, g.position.z + vz*step); if (s){ ux = vx; uz = vz; break; } }
+  g.position.x += ux*step; g.position.z += uz*step; if (s) g.position.y += (s.top - g.position.y)*Math.min(1, dt*12);
+  g.rotation.y = Math.atan2(-ux, -uz); return d;
+}
+function heistSpawn(g, x, z, y){ g.position.set(x, y, z); g.rotation.set(0, 0, 0); g.visible = true; const r = g.userData.rig; r.pelvis.rotation.x = 0; }
+function heistAhead(){
+  const a = meAv[meSex], yaw = thirdP ? a.yaw : P.yaw;
+  for (const d of [20, 17, 14, 11, 8]) for (const off of [0, 4, -4]){
+    const x = P.x - Math.sin(yaw)*d + Math.cos(yaw)*off, z = P.z - Math.cos(yaw)*d - Math.sin(yaw)*off, s = supportAt(x, z, P.feet + 0.5);
+    if (s && Math.abs(s.top - P.feet) < 1.5 && !blocked(x, z, s.top)) return [x, z, s.top];
+  }
+  return [P.x + Math.sin(yaw)*16, P.z + Math.cos(yaw)*16, P.feet];
+}
+function updateHeist(dt){
+  if (!heist.phase) return;
+  heist.t += dt; const t = heist.t, c = heist.carry, a = meAv[meSex];
+  // the stolen swan: flapping, honking, in the visitor's arms
+  if (heist.phase === 'grab' || heist.phase === 'chase'){
+    const show3 = thirdP && camCur > 0.9 && mode === 'walk', yaw = show3 ? a.yaw : P.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+    const hold = show3 || heist.phase === 'grab' ? new THREE.Vector3(P.x + fx*0.42, P.feet + 0.98 + Math.sin(t*14)*0.03, P.z + fz*0.42) : new THREE.Vector3(P.x + fx*0.62 + Math.cos(yaw)*0.12, P.camY - 0.55, P.z + fz*0.62 - Math.sin(yaw)*0.12);
+    if (heist.phase === 'grab'){ const k = smooth(Math.min(1, t/1.1)); c.position.lerpVectors(heist.from, hold, k); c.position.y += Math.sin(k*Math.PI)*0.5; }
+    else c.position.copy(hold);
+    c.rotation.set(Math.sin(t*9)*0.15, yaw + Math.PI/2 + Math.sin(t*5)*0.3, Math.sin(t*11)*0.12); c.visible = true; fountain.swans[0].visible = false;
+    for (const [pv, s] of c.userData.w) pv.rotation.z = s*(0.35 + Math.sin(t*19)*0.75);
+    if (Math.random() < dt*1.4) honk();
+    if (Math.random() < dt*3) puff(c.position.x, c.position.y + 0.2, c.position.z, 1, { size: 0.09, op: 0.8, vy: -0.25, spread: 0.6, max: 1.6 });
+  }
+  if (a.g.visible && heist.phase === 'chase') for (const arm of a.rig.arms){ arm.p.rotation.x = 1.05; arm.p.rotation.z = 0; arm.e.rotation.x = 1.15; }
+  const vig = $('heistVig');
+  if (heist.phase === 'grab'){
+    const cy = P.yaw + 1.1; heist.cam = { p: new THREE.Vector3(P.x - Math.sin(cy)*3.6, P.feet + 1.7, P.z - Math.cos(cy)*3.6), l: new THREE.Vector3(P.x, P.feet + 1.0, P.z) };
+    { a.g.visible = true; a.g.position.set(P.x, P.feet, P.z); a.yaw = a.g.rotation.y = P.yaw; animIdle(a.rig, dt); for (const arm of a.rig.arms){ arm.p.rotation.x = 1.05; arm.e.rotation.x = 1.15; } }
+    if (t > 1.25){
+      heist.phase = 'chase'; heist.t = 0; heist.cam = null; mode = 'walk';
+      const g = heist.guards[0]; heistSpawn(g, 1.45, -4.5, 1.0); whistle();
+      $('heistHud').hidden = false; vig.hidden = false;
+      toast('🚨 "ĐỨNG LẠI! TRẢ THIÊN NGA ĐÂY!"', 'Bảo vệ khu du lịch thổi còi lao tới. Giữ W hoặc đẩy cần điều khiển để chạy!', 3600);
+    }
+    return;
+  }
+  if (heist.phase === 'chase'){
+    const running = P.spd > 5;
+    heist.stam = Math.max(0, Math.min(1, heist.stam + (running ? -dt/13 : dt/5)));
+    if (heist.stam <= 0 && heist.tired <= 0){ heist.tired = 2.6; toast('Hết hơi!', 'Bạn thở không ra hơi, con thiên nga thì càng lúc càng nặng…', 2400); }
+    heist.tired -= dt; heist.slow -= dt; heist.flapT -= dt;
+    if (heist.flapT < 0){ heist.flapT = 6 + Math.random()*4; heist.slow = 0.9; honk(); puff(c.position.x, c.position.y + 0.3, c.position.z, 6, { size: 0.12, spread: 0.9, op: 0.9, vy: 0.2, max: 1.2 });
+      toast(null, ['Thiên nga quẫy cánh tát thẳng vào mặt bạn! 🪶', 'Thiên nga mổ vào tai bạn, đau điếng!', 'Lông bay mù mịt, bạn loạng choạng!'][(Math.random()*3)|0], 1800); }
+    const spd = Math.min(8.6, 5.3 + t*0.15), [g0, g1] = heist.guards;
+    if (!heist.g2 && t > 9){ heist.g2 = true; const [x, z, y] = heistAhead(); heistSpawn(g1, x, z, y); whistle(); toast('Bảo vệ thứ hai chặn đầu!', '"Anh Hai ơi, nó chạy về phía em nè!"', 2600); }
+    let near = 1e9, ng = null;
+    for (const g of heist.guards){ if (!g.visible) continue; const d = heistGuardStep(g, P.x, P.z, g === g1 ? spd*0.92 : spd, dt); const r = g.userData.rig;
+      animWalk(r, dt, spd/2.2); r.arms[0].p.rotation.set(-0.3, 0, -2.4 + Math.sin(t*9)*0.35); r.arms[0].e.rotation.x = 0.3; r.pelvis.rotation.x = 0.12;
+      if (d < near){ near = d; ng = g; } }
+    heist.whT -= dt; if (heist.whT < 0 && near < 30){ heist.whT = 1.1 + Math.random()*0.6; whistle(); }
+    heist.sayT -= dt; if (heist.sayT < 0){ heist.sayT = 4 + Math.random()*2; toast('Bảo vệ', ['"Đứng lại! Thiên nga là tài sản của khu du lịch!"', '"Chạy đâu cho thoát!"', '"Bà con ơi chặn giùm cái!"', '"Thả con thiên nga xuống!"', '"Tui chạy bộ mỗi sáng đó nha!"'][(Math.random()*5)|0], 2000); }
+    $('heistDist').textContent = 'Bảo vệ cách bạn ' + Math.max(0, near - 0.9).toFixed(0) + ' m'; $('heistStam').style.width = (heist.stam*100).toFixed(0) + '%';
+    $('heistStam').style.background = heist.tired > 0 ? '#e0442c' : heist.stam < 0.3 ? '#f0a020' : '#5cc6c4';
+    const want = 70 + (running ? 11 : 3) + (near < 6 ? 4 : 0); camera.fov += (want - camera.fov)*Math.min(1, dt*3); camera.updateProjectionMatrix();
+    vig.style.opacity = (0.35 + Math.max(0, 1 - near/25)*0.65).toFixed(2);
+    if (near < 1.15) heistTackle(ng);
+    return;
+  }
+  if (heist.phase === 'tackle'){
+    const k = heist.tk, g = k.g, sl = t < 1.7 ? 0.32 : 1, tt = k.tt += dt*sl;
+    const e = Math.min(1, tt/0.9), dir = k.dir;
+    g.position.set(k.g0.x + (k.p0.x - dir.x*0.55 - k.g0.x)*e, k.p0.y + Math.sin(e*Math.PI)*0.7 + (e >= 1 ? 0.15 : 0), k.g0.z + (k.p0.z - dir.z*0.55 - k.g0.z)*e);
+    g.rotation.x = -1.45*Math.min(1, tt/0.5); const r = g.userData.rig; for (const arm of r.arms){ arm.p.rotation.set(2.7, 0, 0); arm.e.rotation.x = 0.1; } for (const l of r.legs){ l.p.rotation.x = -0.3; l.k.rotation.x = -0.4; }
+    a.g.visible = true; a.g.position.set(k.p0.x, k.p0.y, k.p0.z); a.g.rotation.order = 'YXZ'; a.g.rotation.y = a.yaw;
+    const f = Math.max(0, Math.min(1, (tt - 0.75)/0.4)); a.g.rotation.x = -1.5*smooth(f); a.g.position.y = k.p0.y + 0.15*f;
+    for (const arm of a.rig.arms){ arm.p.rotation.set(f > 0 ? 2.4 : 1.05, 0, 0); arm.e.rotation.x = 0.3; }
+    if (!k.hit && tt > 0.85){ k.hit = true; noiseHit(0.3, 'lowpass', 220, 0.45); tone(130, 0.25, 'sine', 0.2, 60); honk(); puff(k.p0.x, k.p0.y + 0.5, k.p0.z, 14, { size: 0.16, spread: 1.4, op: 0.95, vy: 0.8, max: 2, gravity: 1.2 });
+      heist.fly = { t: 0, from: c.position.clone() }; $('heistBig').hidden = false; }
+    if (heist.fly){ const F = heist.fly; F.t += dt*sl; const to = new THREE.Vector3(FT.x + 1.0, FT.water, FT.z), u = Math.min(1, F.t/3.2);
+      c.position.lerpVectors(F.from, to, smooth(u)); c.position.y += Math.sin(u*Math.PI)*4.5; c.rotation.set(-0.3*Math.sin(u*Math.PI), Math.atan2(-(to.x - F.from.x), -(to.z - F.from.z)), 0);
+      for (const [pv, s] of c.userData.w) pv.rotation.z = s*(0.2 + Math.sin(F.t*14)*0.9);
+      if (u >= 1 && c.visible){ c.visible = false; fountain.swans[0].visible = true; } }
+    const ang = k.ang0 + tt*0.55, ctr = new THREE.Vector3(k.p0.x, k.p0.y + 0.6, k.p0.z), camH = k.p0.y + 1.1 + tt*0.25;
+    let R0 = 4.6 - Math.min(1.4, tt*0.6); for (let d = 0.8; d <= R0; d += 0.25) if (!camFree(ctr.x + Math.sin(ang)*d, camH, ctr.z + Math.cos(ang)*d)){ R0 = Math.max(1.2, d - 0.4); break; }
+    const look = tt > 2.0 && c.visible ? ctr.clone().lerp(c.position, Math.min(1, (tt - 2.0)/0.8)) : ctr;
+    heist.cam = { p: new THREE.Vector3(ctr.x + Math.sin(ang)*R0, camH, ctr.z + Math.cos(ang)*R0), l: look };
+    if (tt > 4.2 && !k.done){ k.done = true; heistJail(); }
+  }
+}
+function heistTackle(g){
+  heist.phase = 'tackle'; heist.t = 0; mode = 'heist'; const a = meAv[meSex];
+  const dir = new THREE.Vector3(P.x - g.position.x, 0, P.z - g.position.z).normalize();
+  heist.tk = { g, g0: g.position.clone(), p0: new THREE.Vector3(P.x, P.feet, P.z), dir, yaw: thirdP ? a.yaw : P.yaw, tt: 0 };
+  if (!thirdP) a.yaw = P.yaw;
+  { const k = heist.tk; let best = -1, bestA = k.yaw + 1.3;
+    for (let j = 0; j < 12; j++){ const a0 = k.yaw + 1.3 + j*Math.PI/6; let score = 0;
+      for (const da of [0, 0.8, 1.6, 2.4]) for (let d = 0.8; d <= 4.6; d += 0.4){ if (camFree(P.x + Math.sin(a0 + da)*d, P.feet + 1.4, P.z + Math.cos(a0 + da)*d)) score++; else break; }
+      if (score > best){ best = score; bestA = a0; } }
+    k.ang0 = bestA; }
+  for (const o of heist.guards) if (o !== g) o.visible = false;
+  $('heistHud').hidden = true; camera.fov = 62; camera.updateProjectionMatrix(); tone(220, 0.6, 'sawtooth', 0.04, 90);
+}
+function heistJail(){
+  fadeTo(() => {
+    const a = meAv[meSex]; a.g.rotation.x = 0; a.g.rotation.order = 'XYZ';
+    for (const g of heist.guards){ g.visible = false; g.rotation.x = 0; }
+    heist.carry.visible = false; fountain.swans[0].visible = true;
+    $('heistHud').hidden = true; $('heistVig').hidden = true; $('heistBig').hidden = true;
+    heist.phase = ''; heist.cam = null; heist.count++; camera.fov = 70; camera.updateProjectionMatrix(); camera.rotation.z = 0;
+    nhau.jailed = true; nhau.reason = 'swan';
+    tp(92.2, 21.4, STATION.floor, 0);
+    toast('Tạm giữ vì "bắt cóc" thiên nga', 'Bảo vệ bàn giao bạn cho Công an xã Vĩnh Hải. Thiên nga trắng đã bay về bồn nước an toàn. Đến bàn nhỏ để viết bản cam kết.', 7500);
+  });
+}
+acts.push({ x: FT.x, z: FT.z + 2.7, y: 1, r: 1.5, label: () => heist.phase ? 'Đang bị rượt!' : '🦢 Lén bắt trộm thiên nga trắng', fn: heistAsk });
 $('kiteJump').onclick = kiteJump;
 acts.push(
   { x: 33.4, z: 15.3, y: 1, r: 2.2, label: () => st.mhRound ? 'Lên xe đi Mỹ Hòa (đã trả khứ hồi)' : 'Xe đi Mỹ Hòa lướt ván diều · khứ hồi 100 vỏ sò', fn: () => goMyHoa(false) },
@@ -4590,7 +4819,7 @@ const joy = { x: 0, y: 0, id: null };
   j.addEventListener('pointerup', up); j.addEventListener('pointercancel', up);
 }
 let curAct = null;
-function doAct(){ if (mode === 'walk' && curAct && !menuOpen){ initAudio(); curAct.fn(curAct); } }
+function doAct(){ if (heist.phase && mode === 'walk' && curAct){ toast('Đang bị rượt!', 'Chạy trước đã, tính sau!', 1500); return; } if (mode === 'walk' && curAct && !menuOpen){ initAudio(); curAct.fn(curAct); } }
 $('actBtn').onclick = doAct;
 $('camBtn').onclick = () => { if (mode === 'walk') takePhoto(); else if (['boat', 'glass', 'jet', 'banana', 'dive', 'car', 'nhau', 'kite', 'yoga', 'fish'].includes(mode)) $('ridePhoto').click(); };
 if (isTouch){ $('joy').hidden = false; $('help').hidden = true; $('camBtn').hidden = false; }
@@ -4615,7 +4844,8 @@ function updatePlayer(dt){
   // holding forward (W / joystick pushed up) builds into a run after a moment; Shift runs at once
   P.fwdT = mz > 0.5 ? (P.fwdT || 0) + dt : 0;
   const run = keys.ShiftLeft || keys.ShiftRight || Math.hypot(joy.x, joy.y) > 0.92 || P.fwdT > (isTouch ? 0.45 : 0.7);
-  const want = m > 0.05 ? (run ? 7.4 : 3.4)*Math.min(1, Math.max(m, run ? 1 : m)) : 0;
+  let want = m > 0.05 ? (run ? 7.4 : 3.4)*Math.min(1, Math.max(m, run ? 1 : m)) : 0;
+  if (heist.phase === 'chase' && (heist.tired > 0 || heist.slow > 0)) want = Math.min(want, heist.tired > 0 ? 2.8 : 3.4);
   P.spd = (P.spd || 0) + (want - (P.spd || 0))*Math.min(1, dt*(want > (P.spd || 0) ? 3.2 : 8));
   const sp = P.spd*dt/Math.max(0.05, Math.min(1, m || 1));
   const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
@@ -4670,6 +4900,7 @@ function updateWorld(dt, t){
 
 /* ---------------- camera, HUD ---------------- */
 function updateCamera(dt){
+  if (mode === 'heist' && heist.cam){ camera.position.copy(heist.cam.p); camera.lookAt(heist.cam.l); return; }
   if (mode === 'boat' || mode === 'glass' || (mode === 'fade' && ride.phase)){
     tourBoat.updateMatrixWorld();
     if (ride.glass){ camera.position.set(tourBoat.position.x, -0.45, tourBoat.position.z); }
@@ -4768,7 +4999,7 @@ let last = performance.now(), T = 0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last)/1000); last = now; T += dt;
-  updatePlayer(dt); updateAvatar(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateNhau(dt); updateFountain(dt); updateKite(dt); updateYoga(dt); updateShip(dt); updateFish(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
+  updatePlayer(dt); updateAvatar(dt); updateRide(dt); updateWater(dt); updateDive(dt); updateCar(dt); updateCrowd(dt); updateNhau(dt); updateFountain(dt); updateKite(dt); updateYoga(dt); updateShip(dt); updateFish(dt); updateHeist(dt); updateWorld(dt, T); updateCamera(dt); updateHud();
   sky.position.copy(camera.position);
   const fx = camera.position.x, fz = camera.position.z, fy = Math.max(0, camera.position.y - 2);
   sun.target.position.set(fx, fy, fz); sun.position.set(fx + sunDir.x*200, fy + sunDir.y*200, fz + sunDir.z*200);
