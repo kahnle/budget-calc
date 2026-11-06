@@ -476,7 +476,7 @@ function amStairH(z){ const t = 6 - z; if (t < 0) return 1; if (t < 14.4) return
 const AMAN_VILLAS = [
   { x: 150, z: -185, y: 26, name: 'Ocean Pavilion', guests: true }, { x: 178, z: -178, y: 41, name: 'Ocean Pool Villa', guests: true },
   { x: 212, z: -168, y: 52, name: 'Amanoi Residence' }, { x: 200, z: -122, y: 60, name: 'Mountain Pool Villa', guests: true },
-  { x: 194, z: -70, y: 59, name: 'Mountain Pavilion', gapX: 199.5 }
+  { x: 194, z: -70, y: 59, name: 'Mountain Pavilion', gapX: 199.5 }, { x: 232, z: -142, y: 70, name: 'Hilltop Pool Villa', guests: true }
 ];
 // stairways: polyline, start height (null = follow the ground), end height
 const AMAN_TRAILS = [
@@ -484,11 +484,12 @@ const AMAN_TRAILS = [
   { pts: [[150, -150], [172, -150], [172, -170.5]], y0: null, y1: 41 },
   { pts: [[186.5, -173], [203.5, -173]], y0: 41, y1: 52 },
   { pts: [[179.5, -46], [202, -46], [202, -62.6]], y0: 24, y1: 59 },
-  { pts: [[199.5, -77.6], [199.5, -114.6]], y0: 59, y1: 60 }
+  { pts: [[199.5, -77.6], [199.5, -114.6]], y0: 59, y1: 60 },
+  { pts: [[208.5, -117], [226, -117], [226, -134.5]], y0: 60, y1: 70 }
 ];
 const AMAN_ACTS = [];
 // a board game set up on the sala table of every villa
-const BG_VILLA = [['typhu', 'Cờ Tỷ Phú', 0xd9563a], ['chess', 'cờ vua', 0x2f6fb5], ['go', 'cờ vây', 0xf3efe6], ['xq', 'cờ tướng', 0x8e1b12], ['ludo', 'cờ cá ngựa', 0x3a9a4a]];
+const BG_VILLA = [['typhu', 'Cờ Tỷ Phú', 0xd9563a], ['chess', 'cờ vua', 0x2f6fb5], ['go', 'cờ vây', 0xf3efe6], ['xq', 'cờ tướng', 0x8e1b12], ['ludo', 'cờ cá ngựa', 0x3a9a4a], ['poker', 'Poker', 0x1c1c1c]];
 const AMAN_BOARDS = [];
 const zones = [
   { x0: -64, x1: 64, z0: 3, z1: 44, h: () => 0.85, f: 10 },
@@ -1930,15 +1931,17 @@ function villa(x, z){
     post(152.4, -178.4, 26, [['Sảnh Amanoi', 'Ocean Pool Villa', S]]);
     post(170.2, -171.4, 41, [['Amanoi Residence', G(2) + ' · đi qua villa', E], ['Sảnh Amanoi', 'Ocean Pavilion', S]]);
     post(203.5, -167.6, 52, [['Ocean Pool Villa', 'Sảnh Amanoi', W]]);
-    post(177.6, -47.7, 24, [['Mountain Pavilion', G(4), E], ['Mountain Pool Villa', G(3), E]]);
+    post(177.6, -47.7, 24, [['Mountain Pavilion', G(4), E], ['Mountain Pool Villa', G(3), E], ['Hilltop Pool Villa', G(5), E]]);
     post(203.8, -44.3, trailY(202, -46), [['Mountain Pavilion', G(4), N], ['Mountain Pool Villa', G(3), N], ['Sảnh Amanoi', 'Khu đón khách', W]]);
     post(200.6, -63.2, 59, [['Mountain Pool Villa', G(3) + ' · đi qua villa', N], ['Sảnh Amanoi', 'Bậc thang xuống', S]]);
-    post(198, -77.1, 59, [['Mountain Pool Villa', G(3), N]]);
-    post(201.6, -115, 60, [['Mountain Pavilion', 'Sảnh Amanoi', S]]);
+    post(198, -77.1, 59, [['Mountain Pool Villa', G(3), N], ['Hilltop Pool Villa', G(5), N]]);
+    post(207, -116.4, 60, [['Hilltop Pool Villa', G(5), E], ['Mountain Pavilion', 'Sảnh Amanoi', W]]);
+    post(228.3, -134.7, 70, [['Mountain Pool Villa', 'Sảnh Amanoi', S]]);
+    post(224.2, -118.8, trailY(226, -117), [['Hilltop Pool Villa', G(5), N], ['Mountain Pool Villa', 'Sảnh Amanoi', W]]);
     scene.add(coloredMesh(gp, false));
     // trail map at the top of the stairs: forward on the board = into the resort
     { const cv = document.createElement('canvas'); cv.width = 768; cv.height = 640; const c = cv.getContext('2d'), tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4;
-      const X0 = 132, X1 = 226, Z0 = -198, Z1 = -36, M = 40, sx = x => M + (x - X0)/(X1 - X0)*(768 - 2*M), sy = z => 70 + (z - Z0)/(Z1 - Z0)*(640 - 70 - M);
+      const X0 = 132, X1 = 246, Z0 = -198, Z1 = -36, M = 40, sx = x => M + (x - X0)/(X1 - X0)*(768 - 2*M), sy = z => 70 + (z - Z0)/(Z1 - Z0)*(640 - 70 - M);
       const draw = () => {
         c.fillStyle = '#efe4c8'; c.fillRect(0, 0, 768, 640); c.strokeStyle = '#2a1d14'; c.lineWidth = 10; c.strokeRect(5, 5, 758, 630);
         c.fillStyle = '#2a1d14'; c.font = "800 34px 'Alegreya',Georgia,serif"; c.textAlign = 'center'; c.fillText('ĐƯỜNG ĐẾN CÁC VILLA AMANOI', 384, 48);
@@ -1949,7 +1952,7 @@ function villa(x, z){
         for (const L of lines){ c.beginPath(); L.forEach(([x, z], i) => i ? c.lineTo(sx(x), sy(z)) : c.moveTo(sx(x), sy(z))); c.stroke(); }
         c.setLineDash([]);
         AMAN_VILLAS.forEach((v, i) => { c.fillStyle = '#2a1d14'; c.fillRect(sx(v.x - 9), sy(v.z - 8), sx(v.x + 9) - sx(v.x - 9), sy(v.z + 8) - sy(v.z - 8)); c.fillStyle = '#5cc6c4'; c.fillRect(sx(v.x - 6.2), sy(v.z - 7.5), sx(v.x + 3.2) - sx(v.x - 6.2), sy(v.z - 2.5) - sy(v.z - 7.5));
-          c.fillStyle = '#2a1d14'; c.font = "800 19px 'Be Vietnam Pro',sans-serif"; const right = v.x > 190, tx = right ? sx(v.x - 10) : sx(v.x + 10); c.textAlign = right ? 'right' : 'left'; c.fillText(v.name, tx, sy(v.z) - 2);
+          c.fillStyle = '#2a1d14'; c.font = "800 19px 'Be Vietnam Pro',sans-serif"; const right = v.x > 190 && v.x < 225, tx = right ? sx(v.x - 10) : sx(v.x + 10); c.textAlign = right ? 'right' : 'left'; c.fillText(v.name, tx, sy(v.z) - 2);
           c.font = "600 16px 'Be Vietnam Pro',sans-serif"; c.fillStyle = '#8a5a2a'; c.fillText(G(i), tx, sy(v.z) + 18); });
         const hx = sx(150), hy = sy(-44); c.fillStyle = '#d23a2a'; c.beginPath(); c.arc(hx, hy, 11, 0, Math.PI*2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
         c.fillStyle = '#d23a2a'; c.font = "800 18px 'Be Vietnam Pro',sans-serif"; c.textAlign = 'left'; c.fillText('Bạn đang ở đây', hx + 16, hy + 2);
@@ -3740,6 +3743,40 @@ function poseRig(r, ps, dt, t, k = 1){
   ez(r.headPivot.rotation, 'x', ps.head[0], a); ez(r.headPivot.rotation, 'y', ps.head[1], a);
   r.br += dt*1.2; r.body.scale.z = 1 + Math.sin(r.br)*0.025;
 }
+/* ---------------- meditation music for the yoga class: drone pad, singing bowls, soft chimes and sea breeze ---------------- */
+const zen = { on: false, out: null, bus: null, stopList: [], timers: [] };
+function zenBowl(){
+  if (!zen.on || !AC) return; const t = AC.currentTime, f = [146.83, 220, 196, 293.66][(Math.random()*4)|0];
+  for (const [m, v] of [[1, 0.11], [2.76, 0.05], [5.4, 0.022], [8.93, 0.01]]) for (const d of [0, 1.3]){
+    const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f*m + d; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v/(d ? 2 : 1), t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 9/m**0.3);
+    o.connect(g); g.connect(zen.bus); o.start(t); o.stop(t + 10);
+  }
+}
+function zenChime(){
+  if (!zen.on || !AC || Math.random() < 0.35) return; const t = AC.currentTime, f = [587.3, 659.3, 740, 880, 987.8, 1174.7][(Math.random()*6)|0];
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.028, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.5);
+  o.connect(g); g.connect(zen.bus); o.start(t); o.stop(t + 3.6);
+}
+function zenStart(){
+  initAudio(); if (!AC || zen.on) return; zen.on = true; const t = AC.currentTime;
+  const out = AC.createGain(); out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(0.55, t + 4); out.connect(master);
+  const bus = AC.createGain(); bus.connect(out);
+  const dl = AC.createDelay(1), fb = AC.createGain(), lp = AC.createBiquadFilter(); dl.delayTime.value = 0.47; fb.gain.value = 0.5; lp.type = 'lowpass'; lp.frequency.value = 1600;
+  bus.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(out);
+  const stop = [];
+  for (const [f, v] of [[73.42, 0.05], [110, 0.034], [146.83, 0.028], [220, 0.014], [277.2, 0.007]]) for (const d of [-5, 5]){
+    const o = AC.createOscillator(), g = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain(); o.type = 'sine'; o.frequency.value = f; o.detune.value = d; g.gain.value = v*0.6;
+    lfo.frequency.value = 0.04 + Math.random()*0.07; lg.gain.value = v*0.4; lfo.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(bus); o.start(t); lfo.start(t); stop.push(o, lfo);
+  }
+  if (noiseBuf){ const n = AC.createBufferSource(), nf = AC.createBiquadFilter(), ng = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain(); n.buffer = noiseBuf; n.loop = true; nf.type = 'lowpass'; nf.frequency.value = 420; ng.gain.value = 0.02; lfo.frequency.value = 0.09; lg.gain.value = 0.016; lfo.connect(lg); lg.connect(ng.gain); n.connect(nf); nf.connect(ng); ng.connect(out); n.start(t); lfo.start(t); stop.push(n, lfo); }
+  Object.assign(zen, { out, bus, stopList: stop });
+  zen.timers = [setTimeout(zenBowl, 1500), setInterval(zenBowl, 8500), setInterval(zenChime, 2300)];
+}
+function zenStop(){
+  if (!zen.on) return; zen.on = false; zen.timers.forEach(id => { clearTimeout(id); clearInterval(id); });
+  if (!AC) return; const t = AC.currentTime; zen.out.gain.cancelScheduledValues(t); zen.out.gain.setValueAtTime(zen.out.gain.value, t); zen.out.gain.linearRampToValueAtTime(0, t + 2.5);
+  for (const n of zen.stopList) try { n.stop(t + 2.6); } catch (e) {}
+}
 function yogaJoin(){
   if (yoga.on) return;
   openChoice('Lớp yoga Amanoi', 'Lớp yoga ngoài trời bên sảnh chính, nhìn ra vịnh và núi Chúa. HLV hướng dẫn 6 tư thế nhẹ nhàng, ai cũng tập được.', [
@@ -3749,16 +3786,16 @@ function yogaJoin(){
     initAudio(); st.spent += 300000; yoga.joined++;
     fadeTo(() => {
       Object.assign(yoga, { on: true, t: 0, step: -1, cycles: 0 });
-      P.x = YOGA.spot[0]; P.z = YOGA.spot[1]; P.feet = YOGA.y; P.yaw = 0; P.pitch = -0.08; mode = 'yoga';
+      P.x = YOGA.spot[0]; P.z = YOGA.spot[1]; P.feet = YOGA.y; P.yaw = 0; P.pitch = -0.08; mode = 'yoga'; zenStart();
       rideUI('yoga'); $('rideEnd').textContent = 'Rời lớp'; $('ridePhoto').hidden = false;
       tone(220, 3, 'sine', 0.05); tone(440, 2.5, 'sine', 0.025);
-      toast('Chào mừng bạn đến lớp yoga', 'HLV: "Mời bạn ngồi xuống thảm, thả lỏng vai, nhắm mắt nếu muốn. Mình bắt đầu nhé."', 5000);
+      toast('Chào mừng bạn đến lớp yoga', 'HLV: "Mời bạn ngồi xuống thảm, thả lỏng vai, nhắm mắt nếu muốn. Mình bắt đầu nhé." 🎵 Nhạc thiền nhẹ đang phát giúp bạn tịnh tâm.', 6000);
     });
   });
 }
 function yogaEnd(done){
   fadeTo(() => {
-    yoga.on = false; eyeOff = 0; rideUI(null); tp(167.5, -46.2, 24, Math.PI);
+    yoga.on = false; zenStop(); eyeOff = 0; rideUI(null); tp(167.5, -46.2, 24, Math.PI);
     toast(done ? 'Namaste 🙏' : 'Rời lớp yoga', done ? 'Bạn hoàn thành buổi yoga ở Amanoi, người nhẹ nhõm hẳn. HLV tặng bạn một ly trà gừng ấm.' : 'HLV: "Hẹn gặp lại bạn buổi sau nhé!"', 5000);
   });
 }
@@ -4067,19 +4104,63 @@ const BGL = (() => {
       return out;
     },
     kingsFace(b){ const rk = b.indexOf('rK'), bk = b.indexOf('bK'); if (rk < 0 || bk < 0 || rk % 9 !== bk % 9) return false; for (let s = bk + 9; s < rk; s += 9) if (b[s]) return false; return true; },
-    attacked(b, sq, by){ return this.pseudoSide(b, by).some(m => m.t === sq); },
-    make(s, m){ const b = s.b.slice(); b[m.t] = b[m.f]; b[m.f] = null; return { b, turn: s.turn === 'r' ? 'b' : 'r' }; },
-    legal(s){ return this.pseudoSide(s.b, s.turn).filter(m => { const n = this.make(s, m); return !this.kingsFace(n.b) && !this.attacked(n.b, n.b.indexOf(s.turn + 'K'), n.turn); }); },
-    inCheck(s){ return this.attacked(s.b, s.b.indexOf(s.turn + 'K'), s.turn === 'r' ? 'b' : 'r'); },
-    V: { R: 900, C: 450, H: 400, E: 200, A: 200, P: 100, K: 0 },
-    evalB(b){ let v = 0; for (let sq = 0; sq < 90; sq++){ const p = b[sq]; if (!p) continue; const r = (sq/9)|0, c = sq % 9; let x = this.V[p[1]]; if (p[1] === 'P' && (p[0] === 'r' ? r <= 4 : r >= 5)) x += 90 - Math.abs(4 - c)*10; if (p[1] === 'H' || p[1] === 'C') x += (4 - Math.abs(4 - c))*4; v += p[0] === 'r' ? x : -x; } return v; },
-    search(s, d, a, bt){
-      if (d === 0) return (s.turn === 'r' ? 1 : -1)*this.evalB(s.b);
-      const ms = this.legal(s); if (!ms.length) return -100000 - d;
-      ms.sort((x, y) => (s.b[y.t] ? this.V[s.b[y.t][1]] : 0) - (s.b[x.t] ? this.V[s.b[x.t][1]] : 0));
-      let best = -Infinity; for (const m of ms){ const v = -this.search(this.make(s, m), d - 1, -bt, -a); if (v > best) best = v; if (v > a) a = v; if (a >= bt) break; } return best;
+    // fast attack test (used for king safety): looks outward from the square instead of generating every enemy move
+    attacked(b, sq, by){
+      const r = (sq/9)|0, c = sq % 9;
+      for (const [dr, dc] of RD){ let rr = r + dr, cc = c + dc, screen = false;
+        while (on9(rr, cc)){ const q = b[rr*9 + cc]; if (q){ if (!screen){ if (q[0] === by && (q[1] === 'R' || (q[1] === 'K' && dc === 0 && Math.abs(rr - r) === 1) || (q[1] === 'K' && dc !== 0 && Math.abs(cc - c) === 1))) return true; screen = true; } else { if (q[0] === by && q[1] === 'C') return true; break; } } rr += dr; cc += dc; } }
+      for (const [lr, lc, dr, dc] of HM){ const hr = r - dr, hc = c - dc; if (!on9(hr, hc) || b[hr*9 + hc] !== by + 'H') continue; if (!b[(hr + lr)*9 + hc + lc]) return true; }
+      const P = by + 'P';
+      if (by === 'r'){ if (r + 1 < 10 && b[(r + 1)*9 + c] === P) return true; if (r <= 4){ if (c > 0 && b[r*9 + c - 1] === P) return true; if (c < 8 && b[r*9 + c + 1] === P) return true; } }
+      else { if (r - 1 >= 0 && b[(r - 1)*9 + c] === P) return true; if (r >= 5){ if (c > 0 && b[r*9 + c - 1] === P) return true; if (c < 8 && b[r*9 + c + 1] === P) return true; } }
+      return false;
     },
-    ai(s, depth = 2){ const ms = this.legal(s).sort(() => Math.random() - 0.5); let best = ms[0], bv = -Infinity; for (const m of ms){ const v = -this.search(this.make(s, m), depth, -Infinity, -bv); if (v > bv){ bv = v; best = m; } } return best; }
+    make(s, m){ const b = s.b.slice(); b[m.t] = b[m.f]; b[m.f] = null; return { b, turn: s.turn === 'r' ? 'b' : 'r' }; },
+    bad(n, side){ return this.kingsFace(n.b) || this.attacked(n.b, n.b.indexOf(side + 'K'), side === 'r' ? 'b' : 'r'); },
+    legal(s){ return this.pseudoSide(s.b, s.turn).filter(m => !this.bad(this.make(s, m), s.turn)); },
+    inCheck(s){ return this.attacked(s.b, s.b.indexOf(s.turn + 'K'), s.turn === 'r' ? 'b' : 'r'); },
+    V: { R: 900, C: 450, H: 410, E: 200, A: 200, P: 100, K: 0 },
+    evalB(b){
+      let v = 0; const cnt = { rA: 0, rE: 0, bA: 0, bE: 0 }, rk = b.indexOf('rK'), bk = b.indexOf('bK');
+      for (let sq = 0; sq < 90; sq++){ const p = b[sq]; if (!p) continue; const side = p[0], t = p[1], r = (sq/9)|0, c = sq % 9, adv = side === 'r' ? 9 - r : r; let x = this.V[t];
+        if (t === 'P'){ if (adv >= 5){ x += 70 + (adv - 5)*18 - Math.abs(4 - c)*8; if (adv === 9) x -= 60; } else if (adv >= 3 && c % 2 === 0) x += 8; }
+        else if (t === 'H'){ x += (4 - Math.abs(4 - c))*6 + Math.min(adv, 6)*7; if (adv === 0 && (c === 0 || c === 8)) x -= 20; }
+        else if (t === 'C'){ if (c === 4) x += 22; x += Math.min(adv, 5)*3; }
+        else if (t === 'R'){ let mob = 0; for (const [dr, dc] of RD){ let rr = r + dr, cc = c + dc; while (on9(rr, cc) && !b[rr*9 + cc]){ mob++; rr += dr; cc += dc; } } x += mob*5 + (adv >= 5 ? 20 : 0); }
+        else if (t === 'A' || t === 'E') cnt[side + t]++;
+        if (t === 'R' || t === 'H' || t === 'C' || t === 'P'){ const ek = side === 'r' ? bk : rk; if (ek >= 0){ const d = Math.abs(((ek/9)|0) - r) + Math.abs(ek % 9 - c); x += Math.max(0, 7 - d)*(t === 'P' ? 4 : 7); } }
+        v += side === 'r' ? x : -x; }
+      for (const side of ['r', 'b']){ const k = 40*(2 - cnt[side + 'A']) + 25*(2 - cnt[side + 'E']); v += side === 'r' ? -k : k; }
+      return v;
+    },
+    order(s, ms, pv){ const V = this.V; for (const m of ms){ const cap = s.b[m.t]; m.o = (pv && m.f === pv.f && m.t === pv.t) ? 1e6 : cap ? 10*V[cap[1]] - V[s.b[m.f][1]]/10 + 1000 : 0; } return ms.sort((x, y) => y.o - x.o); },
+    qs(s, a, bt, q){
+      if (++this.nodes % 2048 === 0 && Date.now() > this.deadline) throw 'time';
+      const stand = (s.turn === 'r' ? 1 : -1)*this.evalB(s.b); if (stand >= bt) return stand; if (stand > a) a = stand; if (q > 5) return stand;
+      const ms = this.order(s, this.pseudoSide(s.b, s.turn).filter(m => s.b[m.t]));
+      for (const m of ms){ if (s.b[m.t][1] === 'K') return 50000; const n = this.make(s, m); if (this.bad(n, s.turn)) continue; const v = -this.qs(n, -bt, -a, q + 1); if (v >= bt) return v; if (v > a) a = v; }
+      return a;
+    },
+    search(s, d, a, bt, ply = 1){
+      if (++this.nodes % 2048 === 0 && Date.now() > this.deadline) throw 'time';
+      if (d <= 0) return this.qs(s, a, bt, 0);
+      const chk = this.inCheck(s); if (chk) d++;
+      const ms = this.order(s, this.pseudoSide(s.b, s.turn)); let best = -Infinity, any = false;
+      for (const m of ms){ const n = this.make(s, m); if (this.bad(n, s.turn)) continue; any = true; const v = -this.search(n, d - 1, -bt, -a, ply + 1); if (v > best) best = v; if (v > a) a = v; if (a >= bt) break; }
+      return any ? best : -100000 + ply;
+    },
+    ai(s, depth = 4, ms = 900, hist){
+      let root = this.legal(s); if (!root.length) return null; this.nodes = 0; this.deadline = Date.now() + ms;
+      let best = root[(Math.random()*root.length)|0];
+      for (let d = 1; d <= depth; d++){
+        try {
+          this.order(s, root, best); let bv = -Infinity, bm = root[0], a = -Infinity;
+          for (const m of root){ const n = this.make(s, m); let v = -this.search(n, d - 1, -Infinity, -a) + (d <= 2 ? Math.random()*6 : 0); if (hist && v > 0 && hist.includes(n.b.join())) v -= 150; if (v > bv){ bv = v; bm = m; } if (v > a) a = v; }
+          best = bm; if (bv > 90000) break;
+        } catch (e){ if (e !== 'time') throw e; break; }
+      }
+      return best;
+    }
   };
   /* ---------- Cờ vây (go) 9x9, area scoring, komi 6.5 ---------- */
   const go = {
@@ -4242,7 +4323,7 @@ const BG_GAMES = {
   /* ---------------- xiangqi ---------------- */
   xq: {
     CH: { r: { K: '帥', A: '仕', E: '相', H: '傌', R: '俥', C: '炮', P: '兵' }, b: { K: '將', A: '士', E: '象', H: '馬', R: '車', C: '砲', P: '卒' } },
-    start(){ bgReset(); bg.s = BGL.xq.init(); bgSay('Lượt bạn (đỏ).'); bgButtons([['Ván mới', () => { this.start(); bgRender(); }], ['Rời bàn', bgClose, 'danger']]); },
+    start(){ bgReset(); bg.hist = []; bg.s = BGL.xq.init(); bgSay('Lượt bạn (đỏ).'); bgButtons([['Ván mới', () => { this.start(); bgRender(); }], ['Rời bàn', bgClose, 'danger']]); },
     geo(S){ const m = S*0.07, gx = (S - 2*m)/8, gy = (S - 2*m)/9; return { m, gx, gy }; },
     draw(ctx, S){
       bgWood(ctx, S, '#e8c890'); const { m, gx, gy } = this.geo(S), X = c => m + c*gx, Y = r => m + r*gy;
@@ -4263,9 +4344,9 @@ const BG_GAMES = {
       if (bg.s.b[q] && bg.s.b[q][0] === 'r'){ bg.sel = q; bg.hl = BGL.xq.legal(bg.s).filter(z => z.f === q); } else { bg.sel = -1; bg.hl = []; }
     },
     move(m){
-      const cap = !!bg.s.b[m.t]; bg.s = BGL.xq.make(bg.s, m); bg.last = m; bg.sel = -1; bg.hl = []; cap ? tone(420, 0.12, 'square', 0.05) : bgTick();
+      const cap = !!bg.s.b[m.t]; bg.s = BGL.xq.make(bg.s, m); (bg.hist = bg.hist || []).push(bg.s.b.join()); if (bg.hist.length > 40) bg.hist.shift(); bg.last = m; bg.sel = -1; bg.hl = []; cap ? tone(420, 0.12, 'square', 0.05) : bgTick();
       if (!BGL.xq.legal(bg.s).length){ if (bg.s.turn === 'b'){ bgSay('Tướng đối thủ hết đường! Bạn thắng 🎉'); bgWin(true); } else { bgSay('Bạn thua ván này. Thử lại nhé!'); bgWin(false); } return; }
-      if (bg.s.turn === 'b'){ bgSay('Đối thủ đang tính nước…'); bgLater(() => { const am = BGL.xq.ai(bg.s, 2); if (am) this.move(am); }, 420); }
+      if (bg.s.turn === 'b'){ bgSay('Đối thủ đang tính nước…'); bgLater(() => { const am = BGL.xq.ai(bg.s, 6, 1100, bg.hist); if (am) this.move(am); }, 420); }
       else bgSay(BGL.xq.inCheck(bg.s) ? 'Chiếu tướng! Lượt bạn.' : 'Lượt bạn (đỏ).');
     }
   },
@@ -4298,7 +4379,9 @@ const BG_GAMES = {
     yardXY(S, pl, h){ const c = S/15, base = [[1.5, 1.5], [1.5, 10.5], [10.5, 10.5], [10.5, 1.5]][pl]; return [(base[1] + (h % 2)*2 + 0.5)*c, (base[0] + ((h/2)|0)*2 + 0.5)*c]; },
     draw(ctx, S){
       const c = S/15; ctx.fillStyle = '#f6f1e4'; ctx.fillRect(0, 0, S, S);
-      [[0, 0], [0, 9], [9, 9], [9, 0]].forEach(([r, k], pl) => { ctx.fillStyle = this.COL[pl]; ctx.fillRect(k*c, r*c, 6*c, 6*c); ctx.fillStyle = '#fff'; ctx.fillRect((k + 1)*c, (r + 1)*c, 4*c, 4*c); });
+      [[0, 0], [0, 9], [9, 9], [9, 0]].forEach(([r, k], pl) => { const on = !bg.over && bg.s.turn === pl; ctx.fillStyle = this.COL[pl]; ctx.globalAlpha = on ? 1 : 0.55; ctx.fillRect(k*c, r*c, 6*c, 6*c); ctx.globalAlpha = 1; ctx.fillStyle = on ? '#fff8d8' : '#fff'; ctx.fillRect((k + 1)*c, (r + 1)*c, 4*c, 4*c);
+        if (on){ const pu = 0.5 + 0.5*Math.sin(performance.now()/180); ctx.save(); ctx.shadowColor = '#ffe066'; ctx.shadowBlur = c*(0.6 + pu*0.8); ctx.strokeStyle = `rgba(255,224,102,${0.7 + pu*0.3})`; ctx.lineWidth = c*0.32; ctx.strokeRect(k*c + c*0.16, r*c + c*0.16, 6*c - c*0.32, 6*c - c*0.32); ctx.restore();
+          ctx.fillStyle = '#2a1d14'; ctx.font = `800 ${c*0.55}px "Be Vietnam Pro",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(pl === 0 ? 'LƯỢT BẠN' : 'ĐANG ĐI', (k + 3)*c, (r + 5.55)*c); } });
       ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1;
       BGL.ludo.PATH.forEach(([r, k], i) => { const st = BGL.ludo.START.indexOf(i); ctx.fillStyle = st >= 0 ? this.COL[st] : '#ffffff'; ctx.fillRect(k*c, r*c, c, c); ctx.strokeRect(k*c, r*c, c, c); if (st >= 0){ ctx.fillStyle = '#fff'; ctx.font = `${c*0.6}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', k*c + c/2, r*c + c/2); } });
       for (let pl = 0; pl < 4; pl++) for (let i = 0; i < 5; i++){ const [r, k] = BGL.ludo.HOME[pl](i); ctx.fillStyle = this.COL[pl]; ctx.globalAlpha = 0.75; ctx.fillRect(k*c, r*c, c, c); ctx.globalAlpha = 1; ctx.strokeRect(k*c, r*c, c, c); }
@@ -4307,7 +4390,7 @@ const BG_GAMES = {
       for (let pl = 0; pl < 4; pl++) s.pos[pl].forEach((p, h) => {
         let xy; if (p < 0) xy = this.yardXY(S, pl, h); else if (p === 57){ const a = [Math.PI, -Math.PI/2, 0, Math.PI/2][pl]; xy = [7.5*c + Math.cos(a)*c*(0.6 + h*0.18), 7.5*c + Math.sin(a)*c*(0.6 + h*0.18)]; } else xy = this.cellXY(S, BGL.ludo.cell(pl, p));
         const off = s.pos[pl].filter((q, k) => k < h && q === p && p >= 0 && p < 57).length*c*0.12;
-        bgDisc(ctx, xy[0] + off, xy[1] - off, c*0.36, this.COL[pl], '#ffffff', '♞', '#ffffff', `${c*0.42}px serif`);
+        bgDisc(ctx, xy[0] + off, xy[1] - off, c*0.36, this.COL[pl], '#ffffff', '♞\uFE0E', '#ffffff', `${c*0.42}px serif`);
         if (pl === 0 && cand.some(m => m.h === h)){ ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(xy[0] + off, xy[1] - off, c*0.48, 0, Math.PI*2); ctx.stroke(); }
       });
       if (s.die){ ctx.fillStyle = '#fff'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2; const x = 7.5*c, y = 7.5*c, d = c*1.1; ctx.fillRect(x - d/2, y - d/2, d, d); ctx.strokeRect(x - d/2, y - d/2, d, d); ctx.fillStyle = this.COL[s.turn]; const dots = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] }[s.die]; for (const [a, b] of dots){ ctx.beginPath(); ctx.arc(x + a*d*0.27, y + b*d*0.27, d*0.09, 0, Math.PI*2); ctx.fill(); } }
@@ -4335,7 +4418,8 @@ const BG_GAMES = {
       const s = bg.s; if (bg.over) return;
       if (!again) s.turn = (s.turn + 1) % 4; s.rolled = false;
       if (s.turn === 0){ bgSay(again ? 'Được 6, gieo thêm lượt nữa!' : 'Lượt bạn: gieo xúc xắc.'); s.die = again ? s.die : 0; return; }
-      bgLater(() => { s.die = 1 + ((Math.random()*6)|0); const mv = BGL.ludo.ai(s, s.turn, s.die); bgSay(`${this.NM[s.turn]} gieo ${s.die}${mv ? '' : ', không đi được'}.`); if (mv){ const pl = s.turn; bgLater(() => this.doMove(pl, mv), 300); } else bgLater(() => this.next(false), 350); }, 420);
+      bgSay(`Lượt ${this.NM[s.turn]}…`);
+      bgLater(() => { s.die = 1 + ((Math.random()*6)|0); noiseHit(0.25, 'bandpass', 1800, 0.08); const mv = BGL.ludo.ai(s, s.turn, s.die); bgSay(`${this.NM[s.turn]} gieo được ${s.die}${mv ? '' : ', không đi được'}.`); if (mv){ const pl = s.turn; bgLater(() => this.doMove(pl, mv), 1000); } else bgLater(() => this.next(false), 1100); }, again ? 900 : 1300);
     }
   },
   /* ---------------- tỷ phú ---------------- */
@@ -4412,14 +4496,184 @@ const BG_GAMES = {
   }
 };
 $('bgCanvas').addEventListener('pointerdown', bgClick);
+setInterval(() => { if (bg.kind === 'ludo' && !$('bgUI').hidden) bgRender(); }, 90);
 $('bgClose').onclick = bgClose;
 addEventListener('resize', () => { if (bg.kind){ bgSize(); bgRender(); } });
 addEventListener('keydown', e => { if (mode === 'board' && e.code === 'Escape') bgClose(); });
+/* ---------------- Poker Texas Hold'em: you against three bots (play chips only) ---------------- */
+const PK = (() => {
+  const deck = () => { const d = []; for (let c = 0; c < 52; c++) d.push(c); for (let i = 51; i > 0; i--){ const j = (Math.random()*(i + 1))|0; [d[i], d[j]] = [d[j], d[i]]; } return d; };
+  function eval5(cs){
+    const r = cs.map(c => c >> 2).sort((a, b) => b - a), flush = cs.every(c => (c & 3) === (cs[0] & 3));
+    const cnt = {}; for (const x of r) cnt[x] = (cnt[x] || 0) + 1;
+    const g = Object.entries(cnt).map(([k, v]) => [v, +k]).sort((a, b) => b[0] - a[0] || b[1] - a[1]);
+    const u = [...new Set(r)]; let sh = -1;
+    if (u.length === 5){ if (u[0] - u[4] === 4) sh = u[0]; else if (u[0] === 12 && u[1] === 3) sh = 3; }
+    let cat, k;
+    if (sh >= 0 && flush){ cat = 8; k = [sh]; } else if (g[0][0] === 4){ cat = 7; k = [g[0][1], g[1][1]]; }
+    else if (g[0][0] === 3 && g[1][0] === 2){ cat = 6; k = [g[0][1], g[1][1]]; } else if (flush){ cat = 5; k = r; }
+    else if (sh >= 0){ cat = 4; k = [sh]; } else if (g[0][0] === 3){ cat = 3; k = g.map(x => x[1]); }
+    else if (g[0][0] === 2 && g[1][0] === 2){ cat = 2; k = g.map(x => x[1]); } else if (g[0][0] === 2){ cat = 1; k = g.map(x => x[1]); }
+    else { cat = 0; k = r; }
+    let sc = cat; for (let i = 0; i < 5; i++) sc = sc*13 + (k[i] || 0); return sc;
+  }
+  function best(cs){ let b = -1; const n = cs.length; if (n < 5) return -1;
+    for (let a = 0; a < n; a++) for (let c = a + 1; c < n; c++){ const five = cs.filter((_, i) => i !== a && i !== c); if (n === 7){ const v = eval5(five); if (v > b) b = v; } }
+    if (n === 5) return eval5(cs);
+    if (n === 6){ for (let a = 0; a < 6; a++){ const v = eval5(cs.filter((_, i) => i !== a)); if (v > b) b = v; } }
+    return b; }
+  const CAT = ['Mậu thầu', 'Một đôi', 'Hai đôi', 'Sám cô', 'Sảnh', 'Thùng', 'Cù lũ', 'Tứ quý', 'Thùng phá sảnh'];
+  const cat = sc => Math.floor(sc/371293);
+  function equity(hole, board, nOpp, iters = 160){
+    const known = new Set([...hole, ...board]), rest = []; for (let c = 0; c < 52; c++) if (!known.has(c)) rest.push(c);
+    let win = 0;
+    for (let it = 0; it < iters; it++){
+      const need = 5 - board.length + nOpp*2;
+      for (let i = 0; i < need; i++){ const j = i + ((Math.random()*(rest.length - i))|0); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+      const bd = board.concat(rest.slice(0, 5 - board.length)); const me = best(hole.concat(bd)); let o = 5 - board.length, lose = false, ties = 0;
+      for (let k = 0; k < nOpp; k++){ const v = best([rest[o], rest[o + 1]].concat(bd)); o += 2; if (v > me){ lose = true; break; } if (v === me) ties++; }
+      if (!lose) win += 1/(ties + 1);
+    }
+    return win/iters;
+  }
+  return { deck, eval5, best, CAT, cat, equity };
+})();
+BG_INFO.poker = { t: 'Poker Texas Hold\'em', sub: 'Bạn đấu 3 bot, mỗi người 1.000 chip (chip chỉ để chơi, không trừ vỏ sò). Ghép 5 lá mạnh nhất từ 2 lá trên tay và 5 lá chung.' };
+BG_GAMES.poker = {
+  SB: 10, BB: 20, NM: ['Bạn', 'Anh Tư', 'Chị Năm', 'Ông Bảy'], AGG: [0, 0.35, 0.15, 0.6],
+  start(){ bgReset(); bg.s = { pl: this.NM.map(n => ({ n, chips: 1000, hole: [], bet: 0, tot: 0, fold: false, allin: false, acted: false, out: false, last: '' })), dealer: 3, board: [], stage: -1, cur: 0, minR: 20, turn: -1, hand: 0, log: [], phase: 'idle', win: [] };
+    bgSay('Bấm "Chia bài" để bắt đầu. Mù nhỏ 10 / mù lớn 20.'); this.btns(); },
+  nxt(s, i, f){ for (let k = 1; k <= 4; k++){ const j = (i + k) % 4; if (f(s.pl[j])) return j; } return -1; },
+  live(s){ return s.pl.filter(p => !p.out && !p.fold); },
+  pot(s){ return s.pl.reduce((a, p) => a + p.tot, 0); },
+  log(t){ bg.s.log.push(t); if (bg.s.log.length > 30) bg.s.log.shift(); bgSay(t); },
+  pay(p, amt){ amt = Math.min(amt, p.chips); p.chips -= amt; p.bet += amt; p.tot += amt; if (p.chips === 0) p.allin = true; return amt; },
+  deal(){
+    const s = bg.s; if (s.phase === 'bet') return;
+    for (const p of s.pl){ if (p.chips <= 0) p.out = true; Object.assign(p, { hole: [], bet: 0, tot: 0, fold: p.out, allin: false, acted: false, last: '' }); }
+    if (s.pl[0].out || s.pl.filter(p => !p.out).length < 2) return this.over();
+    s.hand++; s.deck = PK.deck(); s.board = []; s.stage = 0; s.win = []; s.phase = 'bet';
+    s.dealer = this.nxt(s, s.dealer, p => !p.out);
+    const act = s.pl.filter(p => !p.out).length, sb = act === 2 ? s.dealer : this.nxt(s, s.dealer, p => !p.out), bb = this.nxt(s, sb, p => !p.out);
+    this.pay(s.pl[sb], this.SB); this.pay(s.pl[bb], this.BB); s.pl[sb].last = 'Mù nhỏ'; s.pl[bb].last = 'Mù lớn';
+    s.cur = this.BB; s.minR = this.BB;
+    for (let r = 0; r < 2; r++) for (const p of s.pl) if (!p.out) p.hole.push(s.deck.pop());
+    noiseHit(0.2, 'bandpass', 2400, 0.06);
+    s.turn = this.nxt(s, bb, p => !p.out && !p.fold && !p.allin);
+    this.log(`Ván ${s.hand}: ${s.pl[s.dealer].n} chia bài.`); this.step();
+  },
+  done(s){ const L = this.live(s); if (L.length <= 1) return true; const need = L.filter(p => !p.allin); if (!need.length) return true; if (need.length === 1 && need[0].bet >= s.cur) return true; return need.every(p => p.acted && p.bet === s.cur); },
+  step(){
+    const s = bg.s; if (bg.over || s.phase !== 'bet') return;
+    if (this.live(s).length === 1) return this.award();
+    if (this.done(s)) return this.street();
+    const p = s.pl[s.turn];
+    if (s.turn === 0){ const toCall = s.cur - p.bet; bgSay(toCall > 0 ? `Lượt bạn: cần ${Math.min(toCall, p.chips)} chip để theo.` : 'Lượt bạn: có thể xem bài (không tố).'); this.btns(); bgRender(); return; }
+    this.btns(); bgRender(); bgLater(() => this.bot(s.turn), 650 + Math.random()*500);
+  },
+  act(i, kind, to){
+    const s = bg.s, p = s.pl[i], toCall = s.cur - p.bet;
+    if (kind === 'fold'){ p.fold = true; p.last = 'Bỏ bài'; this.log(`${p.n} bỏ bài.`); tone(220, 0.08, 'triangle', 0.04); }
+    else if (kind === 'call'){ const a = this.pay(p, toCall); p.last = toCall <= 0 ? 'Xem' : p.allin ? 'All-in' : 'Theo ' + a; this.log(toCall <= 0 ? `${p.n} xem bài.` : `${p.n} theo ${a}${p.allin ? ' (all-in)' : ''}.`); tone(toCall > 0 ? 700 : 500, 0.05, 'triangle', 0.04); }
+    else { to = Math.min(to, p.bet + p.chips); const inc = to - s.cur; this.pay(p, to - p.bet); if (to > s.cur){ if (inc >= s.minR){ s.minR = inc; for (const o of s.pl) if (o !== p) o.acted = false; } s.cur = to; }
+      p.last = p.allin ? 'ALL-IN ' + p.bet : 'Tố ' + p.bet; this.log(`${p.n} ${p.allin ? 'all-in' : 'tố lên'} ${p.bet}!`); noiseHit(0.18, 'bandpass', 1500, 0.07); }
+    p.acted = true;
+    const n = this.nxt(s, i, o => !o.out && !o.fold && !o.allin); s.turn = n < 0 ? i : n;
+    this.step();
+  },
+  bot(i){
+    const s = bg.s, p = s.pl[i]; if (s.phase !== 'bet' || s.turn !== i) return;
+    const opp = this.live(s).length - 1, eq = PK.equity(p.hole, s.board, Math.max(1, opp), s.board.length ? 180 : 110), toCall = Math.min(s.cur - p.bet, p.chips), pot = this.pot(s);
+    const po = toCall/(pot + toCall || 1), r = Math.random(), ag = this.AGG[i], strong = eq > 0.62 - ag*0.12 || (opp === 1 && eq > 0.55);
+    const raiseTo = f => Math.max(s.cur + s.minR, Math.round((s.cur + pot*f)/10)*10);
+    if (toCall <= 0){
+      if (strong && r < 0.75) return this.act(i, 'raise', raiseTo(eq > 0.8 ? 0.9 : 0.55));
+      if (r < 0.06 + ag*0.12 && s.stage < 3) return this.act(i, 'raise', raiseTo(0.5));
+      return this.act(i, 'call');
+    }
+    if (eq + ag*0.05 < po - 0.04 && !(r < ag*0.08)) return this.act(i, 'fold');
+    if (eq > 0.78 && r < 0.6) return this.act(i, 'raise', raiseTo(1.0));
+    if (strong && r < 0.35 + ag*0.3 && toCall < p.chips*0.5) return this.act(i, 'raise', raiseTo(0.7));
+    if (toCall > p.chips*0.6 && eq < 0.5 + (opp > 1 ? 0.08 : 0)) return this.act(i, 'fold');
+    return this.act(i, 'call');
+  },
+  street(){
+    const s = bg.s; for (const p of s.pl){ p.bet = 0; p.acted = false; if (!p.fold && !p.out && !p.allin) p.last = ''; } s.cur = 0; s.minR = this.BB;
+    if (s.stage === 3) return this.showdown();
+    s.stage++; s.deck.pop(); const n = s.stage === 1 ? 3 : 1; for (let k = 0; k < n; k++) s.board.push(s.deck.pop());
+    noiseHit(0.22, 'bandpass', 2400, 0.06); this.log(['', 'Lật 3 lá đầu (flop).', 'Lá thứ tư (turn).', 'Lá cuối (river).'][s.stage]);
+    const canAct = this.live(s).filter(p => !p.allin).length;
+    if (canAct <= 1){ bgRender(); bgLater(() => this.street(), 900); return; }
+    s.turn = this.nxt(s, s.dealer, p => !p.out && !p.fold && !p.allin);
+    this.step();
+  },
+  award(){ const s = bg.s, w = this.live(s)[0], pot = this.pot(s); w.chips += pot; s.win = [s.pl.indexOf(w)]; s.phase = 'end'; this.log(`${w.n} ăn ${pot} chip vì mọi người bỏ bài.`); if (w === s.pl[0]) sfx.chime(); this.endHand(); },
+  showdown(){
+    const s = bg.s; s.phase = 'end'; s.show = true; const L = this.live(s), score = new Map(L.map(p => [p, PK.best(p.hole.concat(s.board))]));
+    const lv = [...new Set(L.map(p => p.tot))].sort((a, b) => a - b); let prev = 0; const won = new Map();
+    for (const l of lv){ let amt = 0; for (const p of s.pl) amt += Math.max(0, Math.min(p.tot, l) - prev); const el = L.filter(p => p.tot >= l); const top = Math.max(...el.map(p => score.get(p))); const ws = el.filter(p => score.get(p) === top);
+      const share = Math.floor(amt/ws.length); ws.forEach((p, k) => { const g = share + (k === 0 ? amt - share*ws.length : 0); p.chips += g; won.set(p, (won.get(p) || 0) + g); }); prev = l; }
+    s.win = [...won.keys()].map(p => s.pl.indexOf(p));
+    for (const p of L) p.last = PK.CAT[PK.cat(score.get(p))];
+    this.log([...won].map(([p, g]) => `${p.n} thắng ${g} chip (${PK.CAT[PK.cat(score.get(p))]})`).join(' · '));
+    if (won.has(s.pl[0])) sfx.chime(); else tone(200, 0.3, 'sine', 0.05, 150);
+    this.endHand();
+  },
+  endHand(){ const s = bg.s; s.turn = -1;
+    if (s.pl[0].chips <= 0){ s.pl[0].out = true; bgSay('Bạn hết chip rồi! Bấm "Ván mới" để chơi lại từ 1.000 chip.'); bgWin(false); }
+    else if (s.pl.every((p, i) => i === 0 || p.chips <= 0)){ bgSay(`Bạn ăn sạch chip của cả bàn với ${s.pl[0].chips} chip! Thần bài Vĩnh Hy 🎉`); bgWin(true); }
+    this.btns(); bgRender(); },
+  over(){ bgSay('Hết ván.'); this.btns(); },
+  btns(){
+    const s = bg.s, me = s.pl[0], L = [];
+    if (s.phase === 'bet' && s.turn === 0 && !bg.over){
+      const toCall = Math.min(s.cur - me.bet, me.chips), pot = this.pot(s), minTo = s.cur + s.minR, maxTo = me.bet + me.chips;
+      L.push(['Bỏ bài', () => this.act(0, 'fold')]);
+      L.push([toCall > 0 ? `Theo ${toCall}` : 'Xem bài', () => this.act(0, 'call')]);
+      if (maxTo > s.cur + toCall*0 && maxTo > minTo){ L.push([`Tố ${minTo}`, () => this.act(0, 'raise', minTo)]); const big = Math.max(minTo, Math.round((s.cur + pot)/10)*10); if (big > minTo && big < maxTo) L.push([`Tố mạnh ${big}`, () => this.act(0, 'raise', big)]); }
+      if (maxTo > s.cur) L.push([`All-in ${me.chips}`, () => this.act(0, 'raise', maxTo)]);
+    } else if (s.phase !== 'bet' && !bg.over) L.push(['🃏 Chia bài', () => { this.deal(); bgRender(); }]);
+    L.push(['Ván mới', () => { this.start(); bgRender(); }], ['Rời bàn', bgClose, 'danger']);
+    bgButtons(L);
+  },
+  click(){},
+  card(ctx, x, y, w, c, up, hi){
+    const h = w*1.42; ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = w*0.12; ctx.shadowOffsetY = w*0.05;
+    ctx.fillStyle = up ? '#fffdf8' : '#1f4fa8'; ctx.beginPath(); const r = w*0.1; ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.fill(); ctx.restore();
+    if (hi){ ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 3; ctx.stroke(); }
+    if (!up){ ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5; ctx.strokeRect(x + w*0.12, y + w*0.12, w*0.76, h - w*0.24); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.font = `700 ${w*0.4}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✦', x + w/2, y + h/2); return; }
+    const rk = '23456789', R = (c >> 2) < 8 ? rk[c >> 2] : ['10', 'J', 'Q', 'K', 'A'][(c >> 2) - 8], su = ['♠', '♥', '♦', '♣'][c & 3] + '︎', red = (c & 3) === 1 || (c & 3) === 2;
+    ctx.fillStyle = red ? '#c8261e' : '#16120e'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `800 ${w*(R === '10' ? 0.36 : 0.42)}px "Be Vietnam Pro",sans-serif`; ctx.fillText(R, x + w*0.3, y + h*0.2);
+    ctx.font = `${w*0.34}px "Segoe UI Symbol","DejaVu Sans",sans-serif`; ctx.fillText(su, x + w*0.3, y + h*0.42);
+    ctx.font = `${w*0.62}px "Segoe UI Symbol","DejaVu Sans",sans-serif`; ctx.fillText(su, x + w*0.6, y + h*0.7);
+  },
+  draw(ctx, S){
+    const s = bg.s; ctx.fillStyle = '#2a1d14'; ctx.fillRect(0, 0, S, S);
+    ctx.save(); ctx.fillStyle = '#5a3a1e'; ctx.beginPath(); ctx.ellipse(S/2, S/2, S*0.47, S*0.36, 0, 0, Math.PI*2); ctx.fill();
+    const gr = ctx.createRadialGradient(S/2, S*0.45, S*0.05, S/2, S/2, S*0.45); gr.addColorStop(0, '#2f8a55'); gr.addColorStop(1, '#155a34'); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(S/2, S/2, S*0.43, S*0.32, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.font = `800 ${S*0.045}px "Alegreya",Georgia,serif`; ctx.textAlign = 'center'; ctx.fillText('VĨNH HY HOLD\'EM', S/2, S*0.66);
+    const cw = S*0.075, bx = S/2 - cw*2.5 - cw*0.24; for (let k = 0; k < 5; k++){ const c = s.board[k]; if (c !== undefined) this.card(ctx, bx + k*cw*1.12, S*0.42, cw, c, true); else { ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.strokeRect(bx + k*cw*1.12, S*0.42, cw, cw*1.42); } }
+    ctx.fillStyle = '#ffd24a'; ctx.font = `800 ${S*0.04}px "Be Vietnam Pro",sans-serif`; ctx.fillText(`Pot: ${this.pot(s)}`, S/2, S*0.385);
+    const seats = [[0.5, 0.8], [0.12, 0.5], [0.5, 0.17], [0.88, 0.5]];
+    s.pl.forEach((p, i) => {
+      const [sx, sy] = seats[i], X = sx*S, Y = sy*S, me = i === 0, w = me ? S*0.095 : S*0.06, turn = s.turn === i && s.phase === 'bet', show = me || (s.show && s.phase === 'end' && !p.fold);
+      if (!p.out) p.hole.forEach((c, k) => { if (p.fold && !me) return; ctx.globalAlpha = p.fold ? 0.4 : 1; this.card(ctx, X - w*1.06 + k*w*1.12, Y - w*(me ? 1.6 : 1.9), w, c, show, s.win.includes(i) && s.phase === 'end'); ctx.globalAlpha = 1; });
+      const bw = S*0.2, bh = S*0.075, by = me ? Y + S*0.01 : Y + S*0.02; ctx.fillStyle = turn ? 'rgba(255,210,74,.95)' : 'rgba(20,14,10,.85)'; ctx.fillRect(X - bw/2, by, bw, bh);
+      ctx.fillStyle = turn ? '#2a1d14' : p.out ? '#776' : '#f4ead8'; ctx.font = `700 ${S*0.028}px "Be Vietnam Pro",sans-serif`; ctx.fillText(p.n + (s.dealer === i ? ' Ⓓ' : ''), X, by + bh*0.36);
+      ctx.font = `600 ${S*0.025}px "Be Vietnam Pro",sans-serif`; ctx.fillStyle = turn ? '#2a1d14' : '#ffd24a'; ctx.fillText(p.out ? 'hết chip' : p.chips + ' chip', X, by + bh*0.78);
+      if (p.last){ ctx.fillStyle = s.win.includes(i) && s.phase === 'end' ? '#ffd24a' : '#fff'; ctx.font = `700 ${S*0.024}px "Be Vietnam Pro",sans-serif`; ctx.fillText(p.last, X, by + bh + S*0.03); }
+      if (p.bet > 0){ const cx = X + (S/2 - X)*0.45, cy = Y + (S*0.5 - Y)*(me ? 0.42 : 0.55) + (me ? -S*0.06 : 0); bgDisc(ctx, cx - S*0.03, cy, S*0.016, '#d23a2a', '#fff'); ctx.fillStyle = '#fff'; ctx.font = `700 ${S*0.026}px sans-serif`; ctx.textAlign = 'left'; ctx.fillText(p.bet, cx - S*0.005, cy + 1); ctx.textAlign = 'center'; }
+    });
+  },
+  side(){ const s = bg.s, me = s.pl[0]; let t = ''; if (me.hole.length === 2 && !me.out){ const sc = PK.best(me.hole.concat(s.board)); t = s.board.length >= 3 ? `Bài của bạn: <b>${PK.CAT[PK.cat(sc)]}</b>` : 'Chờ lật bài chung…'; }
+    return t + '<br><small>' + s.log.slice(-3).join('<br>') + '</small>'; }
+};
 // small textures of each board for the tables in the villas
 function bgThumb(kind){
   const cv = document.createElement('canvas'); cv.width = cv.height = 512; const ctx = cv.getContext('2d');
   const keep = { s: bg.s, sel: bg.sel, hl: bg.hl, last: bg.last }; bg.sel = -1; bg.hl = []; bg.last = null;
-  bg.s = kind === 'chess' ? BGL.chess.init() : kind === 'xq' ? BGL.xq.init() : kind === 'go' ? Object.assign(BGL.go.init(), { b: Array(81).fill(0).map((_, i) => [20, 24, 40, 56, 60, 30, 31].includes(i) ? (i % 2 ? 1 : 2) : 0) }) : kind === 'ludo' ? Object.assign(BGL.ludo.init(4), { cand: [] }) : Object.assign(BGL.typhu.init(['Bạn', 'Chú Sáu', 'Cô Ba']), { dice: [3, 4], phase: 'roll' });
+  bg.s = kind === 'chess' ? BGL.chess.init() : kind === 'xq' ? BGL.xq.init() : kind === 'go' ? Object.assign(BGL.go.init(), { b: Array(81).fill(0).map((_, i) => [20, 24, 40, 56, 60, 30, 31].includes(i) ? (i % 2 ? 1 : 2) : 0) }) : kind === 'ludo' ? Object.assign(BGL.ludo.init(4), { cand: [] }) : kind === 'poker' ? { pl: ['Bạn', 'Anh Tư', 'Chị Năm', 'Ông Bảy'].map((n, i) => ({ n, chips: 1000, hole: [i*7 + 3, i*11 + 30], bet: i % 2 ? 40 : 0, tot: 40, fold: false, out: false, last: '' })), dealer: 1, board: [48, 44, 17], stage: 1, cur: 40, turn: -1, log: [], phase: 'end', win: [], show: false } : Object.assign(BGL.typhu.init(['Bạn', 'Chú Sáu', 'Cô Ba']), { dice: [3, 4], phase: 'roll' });
   try { BG_GAMES[kind].draw(ctx, 512); } catch (e) {}
   Object.assign(bg, keep);
   const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; return t;
