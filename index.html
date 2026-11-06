@@ -510,6 +510,28 @@ const zones = [
   { x0: 56, x1: 86, z0: 38, z1: 245, h: (x, z) => x >= 63.6 && x <= 71.4 && z >= 30 ? streamBed(z) - 0.45 : (x > 71.4 ? eastH(z) : westH(z)) - 0.3, f: 18 }
 ];
 for (const v of AMAN_VILLAS) zones.push({ x0: v.x - 9, x1: v.x + 9, z0: v.z - 8, z1: v.z + 8, h: () => v.y - 0.45, f: 5 });
+// stair profile of each forest trail (computed once, lazily, from the natural slope); the terrain is cut down along it so the steps stay visible
+const TRAIL_RUN = 0.32;
+function trailProf(tr){
+  if (tr.prof) return tr.prof;
+  const P = tr.pts, seg = []; let L = 0;
+  for (let i = 1; i < P.length; i++){ const l = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push([P[i - 1], P[i], L, l]); L += l; }
+  const n = Math.ceil(L/TRAIL_RUN), at = s => { for (const [a, b, s0, l] of seg) if (s <= s0 + l + 1e-6){ const t = (s - s0)/l; return [a[0] + (b[0] - a[0])*t, a[1] + (b[1] - a[1])*t, Math.abs(b[0] - a[0]) > 0.01]; } const b = P[P.length - 1]; return [b[0], b[1], true]; };
+  let yS = tr.y0;
+  if (yS == null){ let best = 1e9; for (const o of AMAN_TRAILS){ if (o === tr || !o.prof) continue; o.prof.xs.forEach(([x, z], i) => { const d = (x - P[0][0])**2 + (z - P[0][1])**2; if (d < best){ best = d; yS = o.prof.ys[i]; } }); } if (yS == null) yS = natH(P[0][0], P[0][1]) + 0.12; }
+  const xs = [], ys = [];
+  for (let i = 0; i <= n; i++){ const s = Math.min(L, i*TRAIL_RUN), [x, z, ax] = at(s); xs.push([x, z, ax]); const nat = natH(x, z) + 0.12, wS = Math.max(0, 1 - s/7), wE = Math.max(0, 1 - (L - s)/7); ys.push(nat*(1 - Math.min(1, wS + wE)) + yS*wS + tr.y1*wE); }
+  ys[0] = yS; ys[n] = tr.y1;
+  for (let k = 0; k < 3; k++){ for (let i = 1; i <= n; i++) ys[i] = Math.max(ys[i - 1] - 0.42, Math.min(ys[i - 1] + 0.42, ys[i])); ys[n] = tr.y1; for (let i = n - 1; i >= 0; i--) ys[i] = Math.max(ys[i + 1] - 0.42, Math.min(ys[i + 1] + 0.42, ys[i])); ys[0] = yS; }
+  return tr.prof = { seg, L, n, at, xs, ys, yS };
+}
+const trailProfAll = () => { for (const tr of AMAN_TRAILS) trailProf(tr); };
+for (const tr of AMAN_TRAILS) for (let i = 1; i < tr.pts.length; i++){
+  const [a, b] = [tr.pts[i - 1], tr.pts[i]], W = 3.6;
+  zones.push({ x0: Math.min(a[0], b[0]) - W, x1: Math.max(a[0], b[0]) + W, z0: Math.min(a[1], b[1]) - W, z1: Math.max(a[1], b[1]) + W, f: 5, h: (x, z) => {
+    trailProfAll(); const pr = tr.prof, sg = pr.seg[i - 1], [p0, p1, s0, l] = sg, t = Math.max(0, Math.min(1, ((x - p0[0])*(p1[0] - p0[0]) + (z - p0[1])*(p1[1] - p0[1]))/(l*l)));
+    return pr.ys[Math.min(pr.n, Math.round((s0 + t*l)/TRAIL_RUN))] - 0.45; } });
+}
 function coastD(x, z){ return Math.max(z, Math.min(-112 - x, z + 262), Math.min(x - 116, z + 232)); }
 function natH(x, z){
   const n = fbm(x*0.011 + 40, z*0.011 + 17);
@@ -1821,23 +1843,25 @@ function villa(x, z){
   const glassM = new THREE.MeshStandardMaterial({ color: 0x7a9aa4, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.28, envMap: envTex }), lantern = [], trailPts = [], trailYs = [];
   // stairways that follow the slope (each step ≤ 0.42 m), with lanterns
   for (const tr of AMAN_TRAILS){
-    const P = tr.pts, seg = []; let L = 0;
-    for (let i = 1; i < P.length; i++){ const l = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push([P[i - 1], P[i], L, l]); L += l; }
-    const RUNT = 0.32, n = Math.ceil(L/RUNT), at = s => { for (const [a, b, s0, l] of seg) if (s <= s0 + l + 1e-6){ const t = (s - s0)/l; return [a[0] + (b[0] - a[0])*t, a[1] + (b[1] - a[1])*t, Math.abs(b[0] - a[0]) > 0.01]; } const b = P[P.length - 1]; return [b[0], b[1], true]; };
-    const ys = [], xs = [];
-    const yS = tr.y0 ?? terrainH(P[0][0], P[0][1]) + 0.12;
-    for (let i = 0; i <= n; i++){ const s = Math.min(L, i*RUNT), [x, z, ax] = at(s); xs.push([x, z, ax]); const nat = terrainH(x, z) + 0.12, wS = Math.max(0, 1 - s/7), wE = Math.max(0, 1 - (L - s)/7); ys.push(nat*(1 - Math.min(1, wS + wE)) + yS*wS + tr.y1*wE); }
-    ys[0] = yS; ys[n] = tr.y1;
-    for (let k = 0; k < 3; k++){ for (let i = 1; i <= n; i++) ys[i] = Math.max(ys[i - 1] - 0.42, Math.min(ys[i - 1] + 0.42, ys[i])); ys[n] = tr.y1; for (let i = n - 1; i >= 0; i--) ys[i] = Math.max(ys[i + 1] - 0.42, Math.min(ys[i + 1] + 0.42, ys[i])); ys[0] = yS; }
+    trailProfAll(); const P = tr.pts, RUNT = TRAIL_RUN, { seg, n, xs, ys } = tr.prof;
     for (let i = 0; i <= n; i++){
       const [x, z, ax] = xs[i], y = ys[i], hw = 0.85, hl = RUNT/2 + 0.01;
       const hx = ax ? hl : hw, hz = ax ? hw : hl;
       addWalk(x - hx, x + hx, z - hz, z + hz, y, stairIdx++); stepBoxes.push({ x, z, sx: hx*2, sz: hz*2, y0: y - 2.2, y1: y });
       trailPts.push([x, z]); trailYs.push([x, z, y]);
-      if (i % 11 === 5){ const sd = (i/11|0) % 2 ? -1 : 1, lx = x + (ax ? 0 : 1.1*sd), lz = z + (ax ? 1.1*sd : 0), ly = y; P3(lantern, SG.box, 0x3a3532, lx, ly + 0.3, lz, 0.22, 0.6, 0.22); P3(lantern, SG.box, 0xfff0c8, lx, ly + 0.68, lz, 0.18, 0.16, 0.18); P3(lantern, SG.box, 0x2a2522, lx, ly + 0.8, lz, 0.28, 0.05, 0.28); }
+      if (i % 11 === 5){ const sd = (i/11|0) % 2 ? -1 : 1, lx = x + (ax ? 0 : 1.4*sd), lz = z + (ax ? 1.4*sd : 0), ly = y; P3(lantern, SG.box, 0x3a3532, lx, ly + 0.3, lz, 0.22, 0.6, 0.22); P3(lantern, SG.box, 0xfff0c8, lx, ly + 0.68, lz, 0.18, 0.16, 0.18); P3(lantern, SG.box, 0x2a2522, lx, ly + 0.8, lz, 0.28, 0.05, 0.28); }
     }
     for (let i = 1; i < P.length - 1; i++){ const [x, z] = P[i], s = seg[i][2], y = ys[Math.round(s/RUNT)]; addWalk(x - 0.85, x + 0.85, z - 0.85, z + 0.85, y, stairIdx++); stepBoxes.push({ x, z, sx: 1.7, sz: 1.7, y0: y - 2.2, y1: y }); }
   }
+  // wooden handrails on both sides of every stairway so the path reads clearly through the forest
+  { const rail = [];
+    for (const tr of AMAN_TRAILS){ const { xs, ys, n } = tr.prof;
+      for (let i = 2; i <= n - 2; i += 3){ const [x, z, ax] = xs[i], y = ys[i];
+        for (const sd of [-1, 1]){ const px = x + (ax ? 0 : 1.0*sd), pz = z + (ax ? 1.0*sd : 0); P3(rail, SG.box, 0x5a3e28, px, y + 0.45, pz, 0.09, 0.9, 0.09);
+          const j = i + 3; if (j > n - 2 || xs[j][2] !== ax) continue; const [x2, z2] = xs[j], y2 = ys[j], qx = x2 + (ax ? 0 : 1.0*sd), qz = z2 + (ax ? 1.0*sd : 0), dx = qx - px, dz = qz - pz, dy = y2 - y, L = Math.hypot(dx, dy, dz);
+          if (ax) P3(rail, SG.box, 0x8a6240, (px + qx)/2, (y + y2)/2 + 0.88, (pz + qz)/2, L, 0.07, 0.07, 0, 0, Math.atan2(dy, dx));
+          else P3(rail, SG.box, 0x8a6240, (px + qx)/2, (y + y2)/2 + 0.88, (pz + qz)/2, 0.07, 0.07, L, Math.atan2(-dy, dz), 0, 0); } } }
+    scene.add(coloredMesh(rail)); }
   scene.add(coloredMesh(lantern));
   AMAN_VILLAS.forEach((v, vi) => {
     const cx = v.x, cz = v.z, Y = v.y, p = [];
@@ -4538,16 +4562,18 @@ const PK = (() => {
   }
   return { deck, eval5, best, CAT, cat, equity };
 })();
-BG_INFO.poker = { t: 'Poker Texas Hold\'em', sub: 'Bạn đấu 3 bot, mỗi người 1.000 chip (chip chỉ để chơi, không trừ vỏ sò). Ghép 5 lá mạnh nhất từ 2 lá trên tay và 5 lá chung.' };
+BG_INFO.poker = { t: 'Poker Texas Hold\'em', sub: 'Bạn đấu 3 bot. Mỗi lượt truy cập bạn chỉ được phát 1.000 chip một lần (chip chỉ để chơi, không trừ vỏ sò); thua hết phải tải lại trang mới được phát lại. Ghép 5 lá mạnh nhất từ 2 lá trên tay và 5 lá chung.' };
+const pkSession = { me: 1000 };
 BG_GAMES.poker = {
   SB: 10, BB: 20, NM: ['Bạn', 'Anh Tư', 'Chị Năm', 'Ông Bảy'], AGG: [0, 0.35, 0.15, 0.6],
-  start(){ bgReset(); bg.s = { pl: this.NM.map(n => ({ n, chips: 1000, hole: [], bet: 0, tot: 0, fold: false, allin: false, acted: false, out: false, last: '' })), dealer: 3, board: [], stage: -1, cur: 0, minR: 20, turn: -1, hand: 0, log: [], phase: 'idle', win: [] };
-    bgSay('Bấm "Chia bài" để bắt đầu. Mù nhỏ 10 / mù lớn 20.'); this.btns(); },
+  start(){ bgReset(); bg.s = { pl: this.NM.map((n, i) => ({ n, chips: i ? 1000 : pkSession.me, hole: [], bet: 0, tot: 0, fold: false, allin: false, acted: false, out: false, last: '' })), dealer: 3, board: [], stage: -1, cur: 0, minR: 20, turn: -1, hand: 0, log: [], phase: 'idle', win: [] };
+    if (pkSession.me <= 0){ bg.s.pl[0].out = true; bg.over = true; bgSay('Bạn đã hết chip của lượt truy cập này. Tải lại trang (reload) để được phát lại 1.000 chip.'); }
+    else bgSay(`Bạn mang ${pkSession.me} chip vào bàn. Bấm "Chia bài" để bắt đầu. Mù nhỏ 10 / mù lớn 20.`); this.btns(); },
   nxt(s, i, f){ for (let k = 1; k <= 4; k++){ const j = (i + k) % 4; if (f(s.pl[j])) return j; } return -1; },
   live(s){ return s.pl.filter(p => !p.out && !p.fold); },
   pot(s){ return s.pl.reduce((a, p) => a + p.tot, 0); },
   log(t){ bg.s.log.push(t); if (bg.s.log.length > 30) bg.s.log.shift(); bgSay(t); },
-  pay(p, amt){ amt = Math.min(amt, p.chips); p.chips -= amt; p.bet += amt; p.tot += amt; if (p.chips === 0) p.allin = true; return amt; },
+  pay(p, amt){ amt = Math.min(amt, p.chips); p.chips -= amt; if (p === bg.s.pl[0]) pkSession.me = p.chips; p.bet += amt; p.tot += amt; if (p.chips === 0) p.allin = true; return amt; },
   deal(){
     const s = bg.s; if (s.phase === 'bet') return;
     for (const p of s.pl){ if (p.chips <= 0) p.out = true; Object.assign(p, { hole: [], bet: 0, tot: 0, fold: p.out, allin: false, acted: false, last: '' }); }
@@ -4619,8 +4645,8 @@ BG_GAMES.poker = {
     if (won.has(s.pl[0])) sfx.chime(); else tone(200, 0.3, 'sine', 0.05, 150);
     this.endHand();
   },
-  endHand(){ const s = bg.s; s.turn = -1;
-    if (s.pl[0].chips <= 0){ s.pl[0].out = true; bgSay('Bạn hết chip rồi! Bấm "Ván mới" để chơi lại từ 1.000 chip.'); bgWin(false); }
+  endHand(){ const s = bg.s; s.turn = -1; pkSession.me = s.pl[0].chips;
+    if (s.pl[0].chips <= 0){ s.pl[0].out = true; bgSay('Bạn đã thua hết chip! Mỗi lượt truy cập chỉ được phát chip một lần, tải lại trang (reload) để được phát lại 1.000 chip.'); bgWin(false); }
     else if (s.pl.every((p, i) => i === 0 || p.chips <= 0)){ bgSay(`Bạn ăn sạch chip của cả bàn với ${s.pl[0].chips} chip! Thần bài Vĩnh Hy 🎉`); bgWin(true); }
     this.btns(); bgRender(); },
   over(){ bgSay('Hết ván.'); this.btns(); },
@@ -4633,7 +4659,7 @@ BG_GAMES.poker = {
       if (maxTo > s.cur + toCall*0 && maxTo > minTo){ L.push([`Tố ${minTo}`, () => this.act(0, 'raise', minTo)]); const big = Math.max(minTo, Math.round((s.cur + pot)/10)*10); if (big > minTo && big < maxTo) L.push([`Tố mạnh ${big}`, () => this.act(0, 'raise', big)]); }
       if (maxTo > s.cur) L.push([`All-in ${me.chips}`, () => this.act(0, 'raise', maxTo)]);
     } else if (s.phase !== 'bet' && !bg.over) L.push(['🃏 Chia bài', () => { this.deal(); bgRender(); }]);
-    L.push(['Ván mới', () => { this.start(); bgRender(); }], ['Rời bàn', bgClose, 'danger']);
+    if (pkSession.me > 0) L.push(['Đổi bàn mới', () => { this.start(); bgRender(); }]); L.push(['Rời bàn', bgClose, 'danger']);
     bgButtons(L);
   },
   click(){},
