@@ -526,11 +526,20 @@ function trailProf(tr){
   return tr.prof = { seg, L, n, at, xs, ys, yS };
 }
 const trailProfAll = () => { for (const tr of AMAN_TRAILS) trailProf(tr); };
-for (const tr of AMAN_TRAILS) for (let i = 1; i < tr.pts.length; i++){
-  const [a, b] = [tr.pts[i - 1], tr.pts[i]], W = 3.6;
-  zones.push({ x0: Math.min(a[0], b[0]) - W, x1: Math.max(a[0], b[0]) + W, z0: Math.min(a[1], b[1]) - W, z1: Math.max(a[1], b[1]) + W, f: 5, h: (x, z) => {
-    trailProfAll(); const pr = tr.prof, sg = pr.seg[i - 1], [p0, p1, s0, l] = sg, t = Math.max(0, Math.min(1, ((x - p0[0])*(p1[0] - p0[0]) + (z - p0[1])*(p1[1] - p0[1]))/(l*l)));
-    return pr.ys[Math.min(pr.n, Math.round((s0 + t*l)/TRAIL_RUN))] - 0.45; } });
+// cut the ground down along each trail (only ever lowers it), so the steps are never buried by the coarse terrain mesh
+const TC_W = 3.4, TC_F = 6;
+function trailCarve(x, z, h){
+  if (x < 140 || x > 250 || z < -200 || z > -35) return h;
+  trailProfAll();
+  for (const tr of AMAN_TRAILS){ const pr = tr.prof;
+    for (const [p0, p1, s0, l] of pr.seg){
+      const t = Math.max(0, Math.min(1, ((x - p0[0])*(p1[0] - p0[0]) + (z - p0[1])*(p1[1] - p0[1]))/(l*l))), qx = p0[0] + (p1[0] - p0[0])*t, qz = p0[1] + (p1[1] - p0[1])*t, d = Math.hypot(x - qx, z - qz);
+      if (d >= TC_W + TC_F) continue;
+      const target = pr.ys[Math.min(pr.n, Math.round((s0 + t*l)/TRAIL_RUN))] - 0.6, w = d <= TC_W ? 1 : smooth(1 - (d - TC_W)/TC_F);
+      if (target < h) h = h + (target - h)*w;
+    }
+  }
+  return h;
 }
 function coastD(x, z){ return Math.max(z, Math.min(-112 - x, z + 262), Math.min(x - 116, z + 232)); }
 function natH(x, z){
@@ -550,7 +559,7 @@ function terrainH(x, z){
     const dx = Math.max(zn.x0 - x, 0, x - zn.x1), dz = Math.max(zn.z0 - z, 0, z - zn.z1), dd = Math.hypot(dx, dz);
     if (dd < zn.f){ const t = smooth(1 - dd/zn.f); h = h + (zn.h(Math.min(Math.max(x, zn.x0), zn.x1), Math.min(Math.max(z, zn.z0), zn.z1)) - h)*t; }
   }
-  return h;
+  return trailCarve(x, z, h);
 }
 function inZone(x, z, pad = 4){ for (const zn of zones) if (x > zn.x0 - pad && x < zn.x1 + pad && z > zn.z0 - pad && z < zn.z1 + pad) return true; return false; }
 {
@@ -1847,11 +1856,11 @@ function villa(x, z){
     for (let i = 0; i <= n; i++){
       const [x, z, ax] = xs[i], y = ys[i], hw = 0.85, hl = RUNT/2 + 0.01;
       const hx = ax ? hl : hw, hz = ax ? hw : hl;
-      addWalk(x - hx, x + hx, z - hz, z + hz, y, stairIdx++); stepBoxes.push({ x, z, sx: hx*2, sz: hz*2, y0: y - 2.2, y1: y });
+      addWalk(x - hx, x + hx, z - hz, z + hz, y, stairIdx++); stepBoxes.push({ x, z, sx: hx*2, sz: hz*2, y0: y - 7, y1: y });
       trailPts.push([x, z]); trailYs.push([x, z, y]);
       if (i % 11 === 5){ const sd = (i/11|0) % 2 ? -1 : 1, lx = x + (ax ? 0 : 1.4*sd), lz = z + (ax ? 1.4*sd : 0), ly = y; P3(lantern, SG.box, 0x3a3532, lx, ly + 0.3, lz, 0.22, 0.6, 0.22); P3(lantern, SG.box, 0xfff0c8, lx, ly + 0.68, lz, 0.18, 0.16, 0.18); P3(lantern, SG.box, 0x2a2522, lx, ly + 0.8, lz, 0.28, 0.05, 0.28); }
     }
-    for (let i = 1; i < P.length - 1; i++){ const [x, z] = P[i], s = seg[i][2], y = ys[Math.round(s/RUNT)]; addWalk(x - 0.85, x + 0.85, z - 0.85, z + 0.85, y, stairIdx++); stepBoxes.push({ x, z, sx: 1.7, sz: 1.7, y0: y - 2.2, y1: y }); }
+    for (let i = 1; i < P.length - 1; i++){ const [x, z] = P[i], s = seg[i][2], y = ys[Math.round(s/RUNT)]; addWalk(x - 0.85, x + 0.85, z - 0.85, z + 0.85, y, stairIdx++); stepBoxes.push({ x, z, sx: 1.7, sz: 1.7, y0: y - 7, y1: y }); }
   }
   // wooden handrails on both sides of every stairway so the path reads clearly through the forest
   { const rail = [];
@@ -3748,23 +3757,36 @@ function updateKite(dt){
 
 /* ---------------- yoga class: synchronised poses, the visitor can join on a free mat ---------------- */
 const YOGA_POSES = [
-  { name: 'Ngồi thiền (Sukhasana)', say: 'Ngồi thẳng lưng, hai tay đặt lên gối. Hít vào sâu… thở ra chậm…', py: -0.8, lean: 0, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [0.55, 0.32, 0.7], head: [0.08, 0], eye: -0.85, pitch: -0.08 },
-  { name: 'Vươn tay lên trời', say: 'Hít vào, đưa hai tay lên cao, kéo dài cột sống…', py: -0.8, lean: 0, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [-2.95, 0.12, 0.15], head: [-0.25, 0], eye: -0.82, pitch: 0.35 },
-  { name: 'Nghiêng người sang bên', say: 'Thở ra, nghiêng người sang trái, cảm nhận hông phải giãn ra…', py: -0.8, lean: 0.3, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [-2.8, 0.25, 0.3], head: [0, 0], eye: -0.88, pitch: 0.1, roll: 0.25 },
-  { name: 'Tư thế cây (Vrksasana)', say: 'Đứng lên, đặt bàn chân phải vào đùi trái, chắp tay trên đầu. Giữ thăng bằng…', py: 0, lean: 0, L: [0, 0, -0.03, 0], R: [0.5, 0, 1.1, -2.3], A: [-2.95, 0.07, 0.35], head: [0, 0], eye: -0.05, pitch: 0.05, sway: 1 },
-  { name: 'Chiến binh II (Virabhadrasana)', say: 'Bước chân rộng, gập gối phải, dang hai tay song song mặt sàn, nhìn về phía trước…', py: -0.25, lean: 0, L: [0.05, 0, -0.55, -0.05], R: [0.6, 0, 0.55, -0.9], A: [0, 1.55, 0], head: [0, -0.6], eye: -0.3, pitch: 0 },
-  { name: 'Chắp tay Namaste', say: 'Về tư thế ngồi, chắp tay trước ngực. Cảm ơn cơ thể mình. Namaste 🙏', py: -0.8, lean: 0, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [0.75, -0.2, 1.9], head: [0.15, 0], eye: -0.85, pitch: -0.12 }
+  { name: 'Ngồi thiền (Sukhasana)', flow: 'sit', say: 'Ngồi thẳng lưng, hai tay đặt lên gối. Hít vào sâu… thở ra chậm…', py: -0.8, lean: 0, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [0.55, 0.32, 0.7], head: [0.08, 0], eye: -0.85, pitch: -0.08 },
+  { name: 'Vươn tay lên trời', flow: 'reach', say: 'Hít vào, đưa hai tay lên cao, kéo dài cột sống…', py: -0.8, lean: 0, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [-2.95, 0.12, 0.15], head: [-0.25, 0], eye: -0.82, pitch: 0.35 },
+  { name: 'Nghiêng người sang bên', flow: 'side', say: 'Tay vươn cao, nghiêng người chậm sang trái rồi sang phải theo nhịp thở, cảm nhận hai bên hông giãn ra…', py: -0.8, lean: 0.3, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [-2.8, 0.25, 0.3], head: [0, 0], eye: -0.88, pitch: 0.1, roll: 0.25 },
+  { name: 'Tư thế cây (Vrksasana)', flow: 'tree', say: 'Đứng lên, đặt bàn chân phải vào đùi trái, chắp tay trên đầu. Giữ thăng bằng…', py: 0, lean: 0, L: [0, 0, -0.03, 0], R: [0.5, 0, 1.1, -2.3], A: [-2.95, 0.07, 0.35], head: [0, 0], eye: -0.05, pitch: 0.05, sway: 1 },
+  { name: 'Chiến binh II (Virabhadrasana)', flow: 'warrior', say: 'Bước chân rộng, gập gối phải, dang hai tay song song mặt sàn, nhìn về phía trước…', py: -0.25, lean: 0, L: [0.05, 0, -0.55, -0.05], R: [0.6, 0, 0.55, -0.9], A: [0, 1.55, 0], head: [0, -0.6], eye: -0.3, pitch: 0 },
+  { name: 'Chắp tay Namaste', flow: 'namaste', say: 'Về tư thế ngồi, chắp tay trước ngực. Cảm ơn cơ thể mình. Namaste 🙏', py: -0.8, lean: 0, L: [1.35, -1.0, -0.7, -2.6], R: [1.35, 1.0, 0.7, -2.6], A: [0.75, -0.2, 1.9], head: [0.15, 0], eye: -0.85, pitch: -0.12 }
 ];
 const YOGA_DUR = 7;
 const yoga = { on: false, t: 0, step: -1, cycles: 0, joined: 0 };
-function poseRig(r, ps, dt, t, k = 1){
+function poseRig(r, ps, dt, t, k = 1, teacher = false){
   const a = Math.min(1, dt*1.8*k);
-  ez(r.pelvis.position, 'y', ps.py, a); ez(r.pelvis.rotation, 'z', ps.lean + (ps.sway ? Math.sin(t*1.3)*0.03 : 0), a); ez(r.pelvis.rotation, 'x', 0, a); ez(r.pelvis.rotation, 'y', 0, a);
+  // everyone keeps moving inside the pose: breathing (8 s cycle) drives arms, chest and head, each pose has its own flow
+  const b = Math.sin(t*0.785), b2 = Math.sin(t*0.42), o = (b + 1)/2;
+  let lean = ps.lean, py = ps.py, A0 = ps.A[0], A1 = ps.A[1], A2 = ps.A[2], hx = ps.head[0], hy = ps.head[1], chest = 0, twist = 0;
+  switch (ps.flow){
+    case 'sit': A0 += b*0.07; hx += b*0.07; chest = -b*0.05; twist = b2*0.12; break;
+    case 'reach': A0 -= o*0.22; A1 += (1 - o)*0.25; py += o*0.04; hx -= o*0.15; chest = -o*0.12; break;
+    case 'side': lean = 0.34*b2; A1 += Math.abs(b2)*0.2; hy = -b2*0.25; break;
+    case 'tree': A1 += o*0.95; A2 += o*0.4; lean += Math.sin(t*1.3)*0.04 + Math.sin(t*3.1 + k*5)*0.015; hx += b*0.05; break;
+    case 'warrior': py += b*0.07; A1 += b*0.06; twist = b2*0.08; chest = -b*0.04; break;
+    case 'namaste': A2 += b*0.18; hx += o*0.3; chest = o*0.1; break;
+  }
+  if (teacher) hy += Math.sin(t*0.35)*0.45;
+  ez(r.pelvis.position, 'y', py, a); ez(r.pelvis.rotation, 'z', lean + (ps.sway ? Math.sin(t*1.3)*0.03 : 0), a); ez(r.pelvis.rotation, 'x', 0, a); ez(r.pelvis.rotation, 'y', twist, a);
+  if (r.body) ez(r.body.rotation, 'x', chest, a);
   const [L, Rl] = r.legs;
   ez(L.p.rotation, 'x', ps.L[0], a); ez(L.p.rotation, 'y', ps.L[1], a); ez(L.p.rotation, 'z', ps.L[2], a); ez(L.k.rotation, 'x', ps.L[3], a);
   ez(Rl.p.rotation, 'x', ps.R[0], a); ez(Rl.p.rotation, 'y', ps.R[1], a); ez(Rl.p.rotation, 'z', ps.R[2], a); ez(Rl.k.rotation, 'x', ps.R[3], a);
-  for (const arm of r.arms){ ez(arm.p.rotation, 'x', ps.A[0], a); ez(arm.p.rotation, 'z', arm.s*ps.A[1], a); ez(arm.e.rotation, 'x', ps.A[2], a); }
-  ez(r.headPivot.rotation, 'x', ps.head[0], a); ez(r.headPivot.rotation, 'y', ps.head[1], a);
+  for (const arm of r.arms){ ez(arm.p.rotation, 'x', A0, a); ez(arm.p.rotation, 'z', arm.s*A1, a); ez(arm.e.rotation, 'x', A2, a); }
+  ez(r.headPivot.rotation, 'x', hx, a); ez(r.headPivot.rotation, 'y', hy, a);
   r.br += dt*1.2; r.body.scale.z = 1 + Math.sin(r.br)*0.025;
 }
 /* ---------------- meditation music for the yoga class: drone pad, singing bowls, soft chimes and sea breeze ---------------- */
@@ -3824,7 +3846,7 @@ function yogaEnd(done){
   });
 }
 function updateYoga(dt){
-  const near = Math.hypot(camera.position.x - 168, camera.position.z - 55) < 70;
+  const near = Math.hypot(camera.position.x - 168, camera.position.z + 55) < 70;
   const T2 = performance.now()/1000, step = Math.floor(T2/YOGA_DUR) % YOGA_POSES.length;
   if (yoga.on){
     yoga.t += dt;
@@ -3838,10 +3860,14 @@ function updateYoga(dt){
   }
   if (!near) return;
   const ps = YOGA_POSES[yoga.on ? yoga.step : step] || YOGA_POSES[0];
-  poseRig(YOGA.teacher.rig, ps, dt, T2, 1.4);
+  poseRig(YOGA.teacher.rig, ps, dt, T2, 1.4, true);
   for (const s of YOGA.students) poseRig(s.rig, ps, dt, T2 + s.lag, 0.8 + s.lag);
 }
 acts.push({ x: 167.5, z: -46.2, y: 24, r: 2.6, label: 'Đăng ký lớp yoga Amanoi · 300 vỏ sò', fn: yogaJoin });
+// a second way in: walk up to the teacher at the front of the class
+acts.push({ x: 168, z: -58.2, y: YOGA.y, r: 2.6, label: () => yoga.on ? 'Đang trong lớp' : '🧘 Tham gia lớp yoga cùng HLV · 300 vỏ sò', fn: yogaJoin });
+makeSign('🧘 LỚP YOGA · ĐẾN GẦN HLV ĐỂ THAM GIA', 3.6, 0.5, 168, YOGA.y + 2.55, -60.6, 0, { bg: '#2a1d14', fg: '#f4ead8', border: '#d8af57', font: "'Be Vietnam Pro',system-ui,sans-serif", weight: 800 });
+{ const p = []; for (const sx of [-1.7, 1.7]) P3(p, SG.box, 0x2a1d14, 168 + sx, YOGA.y + 1.4, -60.65, 0.08, 2.8, 0.08); scene.add(coloredMesh(p)); }
 
 
 /* ---------------- câu cá đầu cầu tàu: cast → wait → strike → reel minigame → catch card ---------------- */
